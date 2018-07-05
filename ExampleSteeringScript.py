@@ -44,7 +44,8 @@ approxHV = floatrawHV - 5.*169./256. ## fix this later. Should be rawHV - 5*(tri
 ##          FILE MANAGEMENT            ##
 #########################################
 ASICmask        = "0000000001"  # e.g. 0000000111 for enabling ASICs 0, 1, and 2
-CHmask          = "0000000000000001" #16-channel mask: 0=HVoff, 1=HVnom
+THmask          = "0000000000000001" #16-channel mask: 0=HVoff, 1=HVnom
+HVmask          = "0100000000000001" #16-channel mask: 0=HVoff, 1=HVnom
 ped_file        = "data/"+SN+"/pedestals.root"
 #UniqueID        = strftime("%Y%m%d_%H%M%S%Z", time.localtime())
 UniqueID        = strftime("%Y%m%d", time.localtime())
@@ -61,16 +62,18 @@ ROOT.gROOT.LoadMacro("root/WaveformPlotting/PlotSomeWaveforms.cxx")
 ROOT.gROOT.LoadMacro("root/GainStudies/MultiGaussFit.cxx")
 ROOT.gROOT.LoadMacro("root/TTreeMgmt/PlotPedestalStatistics.cxx")
 time.sleep(0.1)
-'''
+
+
 #########################################
 ##         TAKE CALIB DATA             ##
 #########################################
 for ASIC in range(10):
     if ((2**ASIC & int(ASICmask,2)) > 0):
-        os.system("sudo ./py/ThresholdScan/SingleASIC_Starting_Values.py %s %s %d %s" % (SN,strRawHV,ASIC,CHmask))
+        os.system("sudo ./py/ThresholdScan/SingleASIC_Starting_Values.py %s %s %d %s" % (SN,strRawHV,ASIC,HVmask))
         time.sleep(0.1)
 time.sleep(0.1)
 print("Threshold scan finished.\n\n")
+
 
 #########################################
 ###   Measure Pedestal Distribution   ###
@@ -99,12 +102,12 @@ print("Pedestal distribution finished\n\n")
 #####         Take Data             #####
 #########################################
 print("Collecting data.")
-numEvts         = 250000
+numEvts         = 100
 HVtrimOffset    = 25                  # optional offset from 'hv-low' value established in calibration section
-trigOffset      = 40                # trigger level w.r.t. baseline (12 bit DAC)
+trigOffset      = 425                # trigger level w.r.t. baseline (12 bit DAC)
 time.sleep(0.1)
 tProg=time.time()                    # for longer data runs, FPGA will reprogram roughly every 3.5 hours (due to 4hr limit)
-os.system("sudo ./py/takeSelfTriggeredData.py %s %s %s %s %d %d %d %f" % (SN,strRawHV,ASICmask,CHmask,HVtrimOffset,trigOffset,numEvts,tProg))
+os.system("sudo ./py/takeSelfTriggeredData.py %s %s %s %s %s %d %d %d %f" % (SN,strRawHV,ASICmask,THmask,HVmask,HVtrimOffset,trigOffset,numEvts,tProg))
 time.sleep(0.1)
 print "writring in %s" % root_file
 ROOT.MakeMBeventTTree("temp/waveformSamples.txt", root_file, "RECREATE")
@@ -113,7 +116,6 @@ os.system("echo -n > temp/waveformSamples.txt") #clear ascii file
 os.system("chown testbench2:testbench2 " + root_file + " && chmod g+w " + root_file)
 print ("Data collection finished.\n\n")
 
-'''
 #########################################
 ###           Analyze Data            ###
 #########################################
@@ -131,4 +133,5 @@ ROOT.MultiGaussFit(root_file,SN, 0, 0, approxHV)
 #ROOT.PlotPhotoElectronPeaks_vs_HV(SN,    "ch0",       0,     0)
 
 
+os.system("sudo chown -vR testbench2:testbench2 data/*")
 print("END of instructions from KLM_HI_SteeringScript.py\n\n")

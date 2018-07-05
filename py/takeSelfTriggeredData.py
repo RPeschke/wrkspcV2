@@ -31,18 +31,19 @@ syncwd="000000010253594e4300000000" ##
 #---------------- USAGE ----------------#
 #e.g./: sudo ./py/takeSelfTriggeredData.py KLMS_0173 74p47 0000000001 0000000000000001 13 15 50000
 usageMSG="MultiASIC take data record usage:\n"+\
-"sudo ./py/takeSelfTriggeredData.py <S/N> <HV> <ASICmask> <CHmask> <HVoffset> <TrigOffset> <numEvts> <tProg>\n"+\
+"sudo ./py/takeSelfTriggeredData.py <S/N> <HV> <ASICmask> <THmask> <HVmask> <HVoffset> <TrigOffset> <numEvts> <tProg>\n"+\
 "Where:\n"+\
     "<S/N>          = KLMS_0XXX\n"+\
     "<HV>           = (e.g.) 74p47\n"+\
     "<ASICmask>     = (e.g.) 0000000001\n"+\
-    "<CHmask>       = (e.g.) 0000000000000001\n"+\
+    "<THmask>       = (e.g.) 0000000000000001\n"+\
+    "<HVmask>       = (e.g.) 0100000000000001\n"+\
     "<HVoffset>     = DAC counts from HVlow\n"+\
     "<TrigOffset>   = DAC counts from THbase\n"+\
     "<numEvts>      = (e.g.) 50000\n"+\
     "<tProg>        = time.time() of last reprogram"
 
-if (len(sys.argv)!=9):
+if (len(sys.argv)!=10):
     print usageMSG
     exit(-1)
 
@@ -50,11 +51,12 @@ interface   = "eth4"
 SN          = str(sys.argv[1])
 rawHV       = str(sys.argv[2])
 ASICmask    = int(sys.argv[3],2)
-CHmask      = int(sys.argv[4],2)
-hvOffset    = int(sys.argv[5])
-trigOffset  = int(sys.argv[6])
-NumEvts     = int(sys.argv[7])
-t0 = tProg  = float(sys.argv[8])
+THmask      = int(sys.argv[4],2)
+HVmask      = int(sys.argv[5],2)
+hvOffset    = int(sys.argv[6])
+trigOffset  = int(sys.argv[7])
+NumEvts     = int(sys.argv[8])
+t0 = tProg  = float(sys.argv[9])
 
 tTotal      = 12*3600
 
@@ -113,11 +115,13 @@ for ASIC in range(10):
     for CH in range (16):
         cmdHVoff  += hex( int('C',16)*(2**28) | ASIC*(2**20) | (CH)*(2**16) | 255 ).split('x')[1]
         cmdZeroTh += hex( int('B',16)*(2**28) | ASIC*(2**24) | (2*CH)*(2**16) | 0 ).split('x')[1]
-        if ((2**ASIC & ASICmask) > 0) and ((2**CH & CHmask) > 0):
+        if ((2**ASIC & ASICmask) > 0) and ((2**CH & HVmask) > 0):
             cmdASIC_HV += hex( int('C',16)*(2**28) | ASIC*(2**20) | (CH)*(2**16)   | hvLow[ASIC][CH]-hvOffset    ).split('x')[1]
-            cmdASIC_Th += hex( int('B',16)*(2**28) | ASIC*(2**24) | (2*CH)*(2**16) | thBase[ASIC][CH]-trigOffset ).split('x')[1]
         else:
             cmdASIC_HV += hex( int('C',16)*(2**28) | ASIC*(2**20) | (CH)*(2**16)   | 255  ).split('x')[1]
+        if ((2**ASIC & ASICmask) > 0) and ((2**CH & THmask) > 0):
+            cmdASIC_Th += hex( int('B',16)*(2**28) | ASIC*(2**24) | (2*CH)*(2**16) | thBase[ASIC][CH]-trigOffset ).split('x')[1]
+        else:
             cmdASIC_Th += hex( int('B',16)*(2**28) | ASIC*(2**24) | (2*CH)*(2**16) | 4095 ).split('x')[1]
 
 
