@@ -63,7 +63,7 @@ ROOT.gROOT.LoadMacro("root/GainStudies/MultiGaussFit.cxx")
 ROOT.gROOT.LoadMacro("root/TTreeMgmt/PlotPedestalStatistics.cxx")
 time.sleep(0.1)
 
-
+'''
 ######################################### Only need to
 ##         TAKE CALIB DATA             ## do this once
 ######################################### per raw HV setting
@@ -73,33 +73,33 @@ for ASIC in range(10):
         time.sleep(0.1)
 time.sleep(0.1)
 print("Threshold scan finished.\n\n")
-
+'''
 
 #########################################
 ###   Measure Pedestal Distribution   ###
 #########################################
-print("Measuring pedestal distributions\n")
-numPedEvtsPerWindow = 20
-time.sleep(0.1)
-for ASIC in range(10):
-    if ((2**ASIC & int(ASICmask,2)) > 0):
-        os.system("sudo ./lib/pedcalc.py eth4 %d" % (ASIC))
-        time.sleep(0.1)
-        os.system("sudo ./py/takeSoftwareTriggeredData.py %s %s %s %d %d" % (SN,strRawHV,ASIC,0,numPedEvtsPerWindow*128))
-        time.sleep(0.1)
-os.system("sudo rm temp/pedsTemp.root")
-time.sleep(0.1)
-ROOT.MakeMBeventTTree("temp/waveformSamples.txt", "temp/pedsTemp.root", "RECREATE")
-time.sleep(0.1)
-ROOT.PlotPedestalStatisticsManyASICs("temp/pedsTemp.root", "data/" + SN + "/plots/pedDist.pdf")
-time.sleep(0.1)
-ROOT.PlotPedestalStatisticsOneASIC("temp/pedsTemp.root", "data/" + SN + "/plots/pedDistOneASIC.pdf")
-time.sleep(0.1)
-ROOT.PlotPedestalStatisticsOneChannel("temp/pedsTemp.root", "data/" + SN + "/plots/pedDistCh0.pdf",0)
-time.sleep(0.1)
-ROOT.PlotPedestalStatisticsOneChannel("temp/pedsTemp.root", "data/" + SN + "/plots/pedDistCh14.pdf",14)
-time.sleep(0.1)
-print("Pedestal distribution finished\n\n")
+#print("Measuring pedestal distributions\n")
+#numPedEvtsPerWindow = 20
+#time.sleep(0.1)
+#for ASIC in range(10):
+#    if ((2**ASIC & int(ASICmask,2)) > 0):
+#        os.system("sudo ./lib/pedcalc.py eth4 %d" % (ASIC))
+#        time.sleep(0.1)
+#        os.system("sudo ./py/takeSoftwareTriggeredData.py %s %s %s %d %d" % (SN,strRawHV,ASIC,0,numPedEvtsPerWindow*128))
+#        time.sleep(0.1)
+#os.system("sudo rm temp/pedsTemp.root")
+#time.sleep(0.1)
+#ROOT.MakeMBeventTTree("temp/waveformSamples.txt", "temp/pedsTemp.root", "RECREATE")
+#time.sleep(0.1)
+#ROOT.PlotPedestalStatisticsManyASICs("temp/pedsTemp.root", "data/" + SN + "/plots/pedDist.pdf")
+#time.sleep(0.1)
+#ROOT.PlotPedestalStatisticsOneASIC("temp/pedsTemp.root", "data/" + SN + "/plots/pedDistOneASIC.pdf")
+#time.sleep(0.1)
+#ROOT.PlotPedestalStatisticsOneChannel("temp/pedsTemp.root", "data/" + SN + "/plots/pedDistCh0.pdf",0)
+#time.sleep(0.1)
+#ROOT.PlotPedestalStatisticsOneChannel("temp/pedsTemp.root", "data/" + SN + "/plots/pedDistCh14.pdf",14)
+#time.sleep(0.1)
+#print("Pedestal distribution finished\n\n")
 
 
 #########################################

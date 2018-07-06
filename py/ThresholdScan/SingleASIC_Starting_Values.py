@@ -121,10 +121,10 @@ for chNo in range(15):
             if (freq > fmax):
                 fmax = freq
                 thBase[chNo] = th
-    
+
         print "\n\nMax Scalar Freq:"
         sys.stdout.write("%.1f " % fmax)
-    
+
         print "\n\nThreshold Base:"
         sys.stdout.write("%d " % thBase[chNo])
         time.sleep(1.0)
@@ -133,7 +133,7 @@ for chNo in range(15):
         cmdTh += hex( int('B',16)*(2**28) | asicNo*(2**24) | (2*chNo)*(2**16) | thBase[chNo]-thOffset ).split('x')[1]#+"AE000100"
         ctrl.send(cmdTh)
         time.sleep(0.01)
-    
+
         minDeltaF = 20000.
         print "\nPerforming HV scan for channel %d" % chNo
         x = array('d')
@@ -174,11 +174,11 @@ for chNo in range(15):
             print "likely causes:"
             print "     -->raw HV out of range"
             print "     -->loose/disconnected ribbon cable"
-    
-    
+
+
 #----WRITE CALIBRATION DATA TO FILE ----#
 if not (os.path.isdir("data/%s/calib/HVandTH" % SN)): # create path if it does not exist
-    print "making directory data/%s/calib/HVandTH" % SN
+    print "\nmaking directory data/%s/calib/HVandTH" % SN
     os.system("mkdir -p data/%s/calib/HVandTH" % SN) # make deepest subdir with parents
     os.system("sudo chown -R testbench2:testbench2 data/%s/calib/" % SN) # recursively change ownership
 
@@ -191,7 +191,7 @@ outfile.close()
 ctrl.close()
 
 deltaTime = (time.time()-t1)/60
-print "Calibration Completed in %.2f min." % deltaTime
+print "\nCalibration Completed in %.2f min." % deltaTime
 print "\nResults:"
 print "\nThreshold base:"
 print(thBase)
@@ -200,4 +200,3 @@ print(hvLow)
 print "\n\nHV high values:"
 print(hvHigh)
 print "Writing calibration values in %s" % calib_file_name
-
