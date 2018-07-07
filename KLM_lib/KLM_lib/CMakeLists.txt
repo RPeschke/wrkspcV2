@@ -1,0 +1,20 @@
+FIND_PACKAGE( ROOT REQUIRED)
+file(GLOB src_files  "src/*.cpp" "src/*.cc" "src/*.cxx")
+file(GLOB_RECURSE INCS "*.h" "*.hh" "*.hpp")
+
+
+add_definitions(-DUSE_ROOT)
+add_library (KLM_lib SHARED  ${src_files} ${INCS})
+
+
+ADD_GEN_ROOT_DICT_AUTO(KLM_lib   -I${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+
+TARGET_LINK_LIBRARIES(KLM_lib ${ROOT_LIBRARIES} )
+
+target_include_directories(KLM_lib PUBLIC ./include ${ROOT_INCLUDE_DIR})
+
+INSTALL(TARGETS KLM_lib  
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
