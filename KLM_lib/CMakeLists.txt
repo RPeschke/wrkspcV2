@@ -14,7 +14,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
 
 If(WIN32)
-add_compile_options("/std:c++latest")
+#add_compile_options("/std:c++latest")
 else(WIN32)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif(WIN32)
