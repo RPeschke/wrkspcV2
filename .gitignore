@@ -1,0 +1,4 @@
+*.root
+.vscode/*
+KLM_lib/lib/*
+KLM_lib/debug/*
