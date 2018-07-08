@@ -6,11 +6,7 @@
 
 #include "TGraph.h"
 
-#include "KLM_lib/extract_peak.hh"
-#include "KLM_lib/helper_int_vector.hh"
-#include "KLM_lib/filter_waveform.hh"
-#include "KLM_lib/extract_area.hh"
-#include "KLM_lib/extract_edges.hh"
+
 
 #include "KLM_lib/Feature_extraction.hpp"
 
