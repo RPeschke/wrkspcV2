@@ -1,0 +1,5 @@
+Package: tclap
+Version: 1.2.2
+Architecture: x86-windows
+Multi-Arch: same
+Description: Templatized command-line argument parser for C++
