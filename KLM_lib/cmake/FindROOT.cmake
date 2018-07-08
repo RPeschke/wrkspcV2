@@ -327,12 +327,24 @@ set(Make_Dict_name "${TargetName}_dict_${c1}")
 
 set(dict_file  ${CMAKE_CURRENT_BINARY_DIR}/${Make_Dict_name}.cxx)
 file(WRITE ${dict_file} "" )
+set(dict_file_pcm  ${CMAKE_CURRENT_BINARY_DIR}/${Make_Dict_name}_rdict.pcm)
+file(WRITE ${dict_file_pcm} "" )
 add_custom_target(${Make_Dict_name}
  ${ROOT_CINT_EXECUTABLE} -f ${dict_file} -c -p -I${ROOT_INCLUDE_DIR} ${MY_INCLUDE_DIRECTORIES} ${headers_input} ${LINKDEF_FILE} 
 )
 add_dependencies(${TargetName} ${Make_Dict_name})
 target_sources(${TargetName} PRIVATE  ${dict_file})
+MESSAGE(STATUS "<PROJECT_SOURCE_DIR> ${PROJECT_SOURCE_DIR}</PROJECT_SOURCE_DIR>")
 
+if (CMAKE_SYSTEM_NAME MATCHES Linux)
+	add_custom_command(TARGET ${TargetName} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/lib/"
+	)
+else (CMAKE_SYSTEM_NAME MATCHES Linux) #windows
+	add_custom_command(TARGET ${TargetName} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/bin/"
+	)
+endif (CMAKE_SYSTEM_NAME MATCHES Linux)
 endfunction()
 
 
