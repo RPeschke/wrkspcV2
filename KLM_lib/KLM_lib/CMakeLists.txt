@@ -1,5 +1,5 @@
 FIND_PACKAGE( ROOT REQUIRED)
-file(GLOB src_files  "src/*.cpp" "src/*.cc" "src/*.cxx")
+file(GLOB_RECURSE src_files  "src/*.cpp" "src/*.cc" "src/*.cxx")
 file(GLOB_RECURSE INCS "*.h" "*.hh" "*.hpp")
 
 
