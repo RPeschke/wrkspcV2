@@ -3,21 +3,31 @@
 void WriteParametersToRootFile(
   const char* root_file,
   const float rawHV,
-  const int* thBase,
-  const int* thOffset,
-  const int* HV_DAC,
-  const float hitRate
+  const long int thDAC_Base[15],
+  const long int thDAC[15],
+  const long int HV_DAC[15],
+  const float trigRate
 )
 {
+
+  Float_t RawHV    = rawHV;
+  Float_t TrigRate = trigRate;
+  Int_t   ThDAC_Base[15], ThDAC[15], HVtrimDAC[15];
+
+  for (int ch=0; ch<15; ch++) {
+    ThDAC_Base[ch] = (int)thDAC_Base[ch];
+    ThDAC[ch]      = (int)thDAC[ch];
+    HVtrimDAC[ch]  = (int)HV_DAC[ch];
+  }
 
   TFile* file = new TFile(root_file, "RECREATE");
   TTree* tree = new TTree("parameters","Data collection parameters");
 
-  tree->Branch("RawHV", &rawHV, "RawHV_V/F");
-  tree->Branch("ThBase", thBase, "ThresholdBase[16]/I");
-  tree->Branch("ThOffset", thOffset, "ThresholdOffset[16]/I");
-  tree->Branch("HV_DAC", HV_DAC, "HV_DAC[16]/I");
-  tree->Branch("TrigRate", &trigRate, "TrigRate_Hz/F");
+  tree->Branch("RawHV", &RawHV, "RawHV_V/F");
+  tree->Branch("ThDAC_Base", ThDAC_Base, "ThresholdBaseValue_12bitDACvalue[15]/I");
+  tree->Branch("ThDAC", ThDAC, "ThresholdSetting_12bitDACvalue[15]/I");
+  tree->Branch("HVtrimDAC", HVtrimDAC, "HV_Trim_8bit5V_DACvalue[15]/I");
+  tree->Branch("TrigRate", &TrigRate, "TrigRate_Hz/F");
 
   tree->Fill();
   file->Write("parameters");
@@ -46,6 +56,7 @@ void MakeMBeventTTree(const char* ascii_input, const char* root_output) {
 
   int nlines = 0, tempSamp = 0, offset = 0;
   while (1) { // loops intil break is reached
+    if (!infile.good()) break;
     infile >>      EvtNum      ;
     infile >>      AddNum      ;
     infile >>      WrAddNum    ;
@@ -55,13 +66,12 @@ void MakeMBeventTTree(const char* ascii_input, const char* root_output) {
       offset = (i==15) ? 2048 : 3400;
       infile >>  peakTime ; // FW feature extraction
       infile >>  peakVal ; // FW feature extraction
-      for (int j=0; j<128 j++) {
+      for (int j=0; j<128; j++) {
           infile >> tempSamp;               // remaining samples
           Sample[i][j]=offset-tempSamp;
       }// END SAMP LOOP
     }// END CH LOOP
     tree->Fill();
-    if (!infile.good()) break;
     nlines++;
   }// END EVENT LOOP
   printf("Read %d lines.\n",nlines);
