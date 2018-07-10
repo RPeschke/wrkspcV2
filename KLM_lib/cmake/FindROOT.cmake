@@ -334,7 +334,8 @@ add_custom_target(${Make_Dict_name}
 )
 add_dependencies(${TargetName} ${Make_Dict_name})
 target_sources(${TargetName} PRIVATE  ${dict_file})
-MESSAGE(STATUS "<PROJECT_SOURCE_DIR> ${PROJECT_SOURCE_DIR}</PROJECT_SOURCE_DIR>")
+source_group(dictionary FILES  ${dict_file} )
+#MESSAGE(STATUS "<PROJECT_SOURCE_DIR> ${PROJECT_SOURCE_DIR}</PROJECT_SOURCE_DIR>")
 
 if (CMAKE_SYSTEM_NAME MATCHES Linux)
 	add_custom_command(TARGET ${TargetName} POST_BUILD
