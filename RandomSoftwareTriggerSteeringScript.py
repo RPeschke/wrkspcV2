@@ -237,7 +237,7 @@ for evtNum in range(0, NumEvts):
         sys.stdout.write('.')
         sys.stdout.flush()
     if ((evtNum>0 and (evtNum%8000)==0) or evtNum==(NumEvts-1)):
-        sys.stdout.write("<--%d\n" % evtNum)
+        sys.stdout.write("<--%d\n" % (NumEvts))
         sys.stdout.flush()
     rcv = linkEth.hexToBin(rcv)
     f.write(rcv) # write received binary data into file
