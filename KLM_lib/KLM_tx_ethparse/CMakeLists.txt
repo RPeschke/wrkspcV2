@@ -1,7 +1,7 @@
 find_package(TCLAP  REQUIRED)
 
 add_executable (tx_ethparse_RP src/tx_ethparse_RP.cpp)
-
+ADD_RPATH(tx_ethparse_RP)
 
 TARGET_LINK_LIBRARIES(tx_ethparse_RP ${ROOT_LIBRARIES} KLM_lib  TCLAP)
 
@@ -15,7 +15,7 @@ INSTALL(TARGETS tx_ethparse_RP
 
 
 add_executable (tx_ethparse1_ck src/tx_ethparse1_ck.cpp)
-
+ADD_RPATH(tx_ethparse1_ck)
 
 TARGET_LINK_LIBRARIES(tx_ethparse1_ck ${ROOT_LIBRARIES} KLM_lib  )
 
