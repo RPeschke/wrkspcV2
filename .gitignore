@@ -1,2 +1,9 @@
+<<<<<<< HEAD
 *.log
 !.gitignore
+=======
+*.root
+.vscode/*
+KLM_lib/lib/*
+KLM_lib/debug/*
+>>>>>>> 1a2b2fc3f57d248d88745e5d81e48a331bbb0a77
