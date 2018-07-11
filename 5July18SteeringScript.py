@@ -106,15 +106,19 @@ print("Threshold scan finished.\n\n")
 #####         Take Data             #####
 #########################################
 print("Collecting data.")
-numEvts         = 10
+numEvts         = 10000
 HVtrimOffset    = 25                  # optional offset from 'hv-low' value established in calibration section
 trigOffset      = 425                # trigger level w.r.t. baseline (12 bit DAC)
 time.sleep(0.1)
 tProg=time.time()                    # for longer data runs, FPGA will reprogram roughly every 3.5 hours (due to 4hr limit)
-os.system("sudo ./py/takeSelfTriggeredData.py %s %s %s %s %s %d %d %d %f" % (SN,strRawHV,ASICmask,THmask,HVmask,HVtrimOffset,trigOffset,numEvts,tProg))
-time.sleep(0.1)
-print "writring in %s" % root_file
-ROOT.MakeMBeventTTree("temp/waveformSamples.txt", root_file, "RECREATE")
+for HVtrimOffset in range(15,35,2):
+    os.system("sudo ./py/takeSelfTriggeredData.py %s %s %s %s %s %d %d %d %f" % (SN,strRawHV,ASICmask,THmask,HVmask,HVtrimOffset,trigOffset,numEvts,tProg))
+    time.sleep(0.1)
+    print "writring in %s" % root_file
+    root_file = "data/%s/%s_HV%s.root" % (SN,SN,169-HVtrimOffset)
+    ROOT.MakeMBeventTTree("temp/waveformSamples.txt", root_file, "RECREATE")
+    os.system("sudo /bin/bash setup_thisMB.sh %s" % ASICmask)
+    time.sleep(0.1)
 time.sleep(0.1)
 os.system("echo -n > temp/waveformSamples.txt") #clear ascii file
 os.system("chown testbench2:testbench2 " + root_file + " && chmod g+w " + root_file)
@@ -125,7 +129,7 @@ print ("Data collection finished.\n\n")
 #########################################
 
 #####PlotSomeWaveforms(const char* root_file, const int argCH)
-ROOT.PlotSomeWaveforms(root_file,SN)
+#ROOT.PlotSomeWaveforms(root_file,SN)
 #time.sleep(0.1)
 
 #####PlotPhotoElectronPeaks(char* root_file, int ASIC, int CH, float HV)

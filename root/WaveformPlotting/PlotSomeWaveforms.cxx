@@ -54,7 +54,7 @@ void PlotSomeWaveforms(const char* root_file, const char* SN) {
       m->SetMarkerColorAlpha(kBlue, 0.35);
       m->SetMarkerStyle(kPlus);
       m->SetMarkerSize(5);
-      h1[c]->GetListOfFunctions()->Add(m);
+      //h1[c]->GetListOfFunctions()->Add(m);
 
       //// print coordinates on plot
       //sprintf(m_coord, "[%3.0f, %3.0f]", xpeak, ypeak);

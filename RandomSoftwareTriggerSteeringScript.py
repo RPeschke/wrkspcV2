@@ -9,16 +9,17 @@ import cmd_lib
 sys.path.append('/home/testbench2/root_6_08/lib')
 import ROOT
 import numpy as np
+import random
 ################################################################################
 ##                      KLM Hawaii Steering Script
 ##
-##      This script is meant to simplify data collection for the KLM scintillator
-##  testbench in Hawaii. Below are sections for Data Collection Parameters,
-##  loading of ROOT macros, running targetX ASIC calibration procedures,
-##  collecting targetX data, saving the data to a ROOT tree, and analyzing data.
-##  The user can uncomment or add in the scripts they want to run, comment out
-##  the scripts they don't need, then run everything by launching their own
-##  version of this script.
+##      This script collects TargetX data at a constant frequency but reads out
+##  a random window each time
+##
+##
+##
+##
+##
 ##
 ##      Author: Chris Ketter
 ##      email:  cketter@hawaii.edu
@@ -41,6 +42,9 @@ if (len(sys.argv)!=3):
 SN          = str(sys.argv[1])
 strRawHV    = str(sys.argv[2])
 floatHV = float(strRawHV.replace("p","."))
+
+
+
 
 
 #########################################
@@ -125,7 +129,7 @@ HV_DAC = cmd.Get_ASIC_HV_from_file(0)
 #            if ((i%1)==0):
 #                sys.stdout.write('.')
 #                sys.stdout.flush()
-#            if (i>0 and (i%80)==0) or i==(128*numPedEvtsPerWindow-1):
+#            if (i>0 and (i%80)==0) or i==(128*numPedEvtsPerWindow):
 #                sys.stdout.write("<--%d\n" % i)
 #                sys.stdout.flush()
 #            rcv = linkEth.hexToBin(rcv)
@@ -169,7 +173,7 @@ HV_DAC = cmd.Get_ASIC_HV_from_file(0)
 #########################################
 
 #---- CONFIGURE TRIGGER THRESHOLDS ----#
-trigLevel = [thBase[0]-425,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095]
+trigLevel = [4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095]
 cmdTh = cmd.Generate_ASIC_TH_cmd(0,trigLevel)
 
 #---- CONFIGURE HV DAC VALUES ----#
@@ -181,7 +185,7 @@ cmdHV = cmd.Generate_ASIC_HV_cmd(0,HV_DAC)
     # OpMode:  =1 for ped sub data  /  =2 for peds  /  =3 for raw data
     # OutMode: =0 for waveforms  /  =1 for feature extracted data only
     # LookBack: Window lookback parameter in range [0,511]
-cmdRunConfig = cmd.Generate_ASIC_triggered_run_config_cmd(1,0,3) #(OpMode, OutMode, LookBack)
+cmdRunConfig = cmd.Generate_Software_triggered_run_config_cmd(1,0,0) #(OpMode, OutMode, ASIC)
 
 #---- SEND COMMANDS TO TX ASIC AND FPGA ----#
 ctrl.open()
@@ -194,7 +198,7 @@ ctrl.send(cmdRunConfig)
 time.sleep(0.2)
 
 #---- DATA COLLECTION ----#
-NumEvts = 10
+NumEvts = 100
 print "Taking %s events . . ." % (NumEvts)
 #print "Taking data for %d seconds" % (tTotal)
 os.system("echo -n > temp/data.dat") #clean file without removing (prevents ownership change to root in this script)
@@ -224,21 +228,23 @@ for evtNum in range(0, NumEvts):
         tProg = time.time()
         print("Resuming data collection.\n\n")
         tExtra += time.time()-tProgStart
+    ctrl.send(cmd.Set_Readout_Window(random.randint(0,511)))
+    time.sleep(0.01)
+    ctrl.send(cmd.forceTrig)
     rcv = ctrl.receive(20000)# rcv is string of Hex
     time.sleep(0.001)
     if (evtNum>0 and (evtNum%100)==0):
         sys.stdout.write('.')
         sys.stdout.flush()
     if ((evtNum>0 and (evtNum%8000)==0) or evtNum==(NumEvts-1)):
-        sys.stdout.write("<--%d\n" % evtNum)
+        sys.stdout.write("<--%d\n" % (NumEvts))
         sys.stdout.flush()
     rcv = linkEth.hexToBin(rcv)
     f.write(rcv) # write received binary data into file
     t2 = time.time()-t0
+print evtNum
 EvtRate = (1+evtNum)/float(t2-tExtra)
 print "\nOverall hit rate was %.2f Hz" % EvtRate
-ctrl.send(cmd.turnOffASICtriggering)
-time.sleep(0.1)
 f.close()
 ctrl.send(cmdHVoff)  # No sense in leaving it cranked up anymore
 time.sleep(0.2)
