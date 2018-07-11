@@ -11,7 +11,8 @@ add_executable (KLM_test01 ${src_files})
 
 
 TARGET_LINK_LIBRARIES(KLM_test01 ${ROOT_LIBRARIES} KLM_lib )
-
+ 
+ADD_RPATH(KLM_test01)
 
 INSTALL(TARGETS KLM_test01  
   RUNTIME DESTINATION bin

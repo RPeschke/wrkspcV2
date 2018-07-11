@@ -1,6 +1,8 @@
 # project name
 PROJECT(KLM_lib)
 
+include(cmake/add_RPATH.cmake)
+
 # project version
 SET( ${PROJECT_NAME}_VERSION_MAJOR 1 )
 SET( ${PROJECT_NAME}_VERSION_MINOR 0 )
