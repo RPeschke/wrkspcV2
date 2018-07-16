@@ -337,9 +337,9 @@ target_sources(${TargetName} PRIVATE  ${dict_file})
 MESSAGE(STATUS "<PROJECT_SOURCE_DIR> ${PROJECT_SOURCE_DIR}</PROJECT_SOURCE_DIR>")
 
 if (CMAKE_SYSTEM_NAME MATCHES Linux)
-#	add_custom_command(TARGET ${TargetName} POST_BUILD
-#		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/lib/"
-#	)
+	add_custom_command(TARGET ${TargetName} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/lib/"
+	)
 else (CMAKE_SYSTEM_NAME MATCHES Linux) #windows
 	add_custom_command(TARGET ${TargetName} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/bin/"
