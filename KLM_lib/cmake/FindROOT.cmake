@@ -166,6 +166,13 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 
+IF(ROOT_FOUND AND NOT TARGET CERN_ROOT)
+	add_library (CERN_ROOT INTERFACE)
+	target_include_directories(CERN_ROOT INTERFACE  ${ROOT_INCLUDE_DIR})
+	TARGET_LINK_LIBRARIES(CERN_ROOT INTERFACE ${ROOT_LIBRARIES} )
+	target_compile_definitions(CERN_ROOT INTERFACE USE_ROOT)
+ENDIF(ROOT_FOUND AND NOT TARGET CERN_ROOT)
+
 
   ###########################################
   #
@@ -334,7 +341,8 @@ add_custom_target(${Make_Dict_name}
 )
 add_dependencies(${TargetName} ${Make_Dict_name})
 target_sources(${TargetName} PRIVATE  ${dict_file})
-MESSAGE(STATUS "<PROJECT_SOURCE_DIR> ${PROJECT_SOURCE_DIR}</PROJECT_SOURCE_DIR>")
+source_group(dictionary FILES  ${dict_file} )
+#MESSAGE(STATUS "<PROJECT_SOURCE_DIR> ${PROJECT_SOURCE_DIR}</PROJECT_SOURCE_DIR>")
 
 if (CMAKE_SYSTEM_NAME MATCHES Linux)
 #	add_custom_command(TARGET ${TargetName} POST_BUILD
