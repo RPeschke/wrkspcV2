@@ -1,4 +1,4 @@
-#include "KLM_lib/look_for_after_pulsing.hh"
+#include "KLM_lib/look_for_after_pulsing.hpp"
 #include "KLM_lib/extract_peak.hh"
 
 feature look_for_after_pulsing(const std::vector<int>& ADC_counts){
