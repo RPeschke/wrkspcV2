@@ -48,7 +48,7 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 	feature_branch branch_TOT(out_tree, "TOT");
 	adc_count_branch branch_adc(out_tree, "adc_counts");
 	adc_count_branch branch_adc_x(out_tree, "adc_x");
-
+	feature_branch branch_after_pulse(out_tree, "after_pulse");
 	branch_adc_x << get_x();
 
 	for (int i = 0; i < tree->GetEntries() - 1; ++i) {
@@ -68,7 +68,7 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 		counter_branch << counter;
 
 		branch_TOT << extract_time_over_threshold(vec1, 200, 250);
-
+    branch_after_pulse<< look_for_after_pulsing(vec1);
 		branch_adc << t1->ADC_counts[ChannelNr];
 		out_tree->Fill();
 
@@ -88,4 +88,3 @@ void Feature_extraction_read_file2(const std::string& fileName, const std::strin
 	Feature_extraction_read_file(fileName.c_str(), "tree", 14, &out1);
 	Feature_extraction_read_file(fileName.c_str(), "tree", 0, &out1);
 }
-
