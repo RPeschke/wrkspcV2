@@ -345,9 +345,9 @@ source_group(dictionary FILES  ${dict_file} )
 #MESSAGE(STATUS "<PROJECT_SOURCE_DIR> ${PROJECT_SOURCE_DIR}</PROJECT_SOURCE_DIR>")
 
 if (CMAKE_SYSTEM_NAME MATCHES Linux)
-#	add_custom_command(TARGET ${TargetName} POST_BUILD
-#		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/lib/"
-#	)
+	add_custom_command(TARGET ${TargetName} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/lib/"
+	)
 else (CMAKE_SYSTEM_NAME MATCHES Linux) #windows
 	add_custom_command(TARGET ${TargetName} POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/bin/"
@@ -371,6 +371,64 @@ function(ADD_GEN_ROOT_DICT_AUTO TargetName MY_INCLUDE_DIRECTORIES)
 
 file(GLOB_RECURSE headers_input "*.hpp")
 file(GLOB_RECURSE LINKDEF_FILE "*LinkDef.hh")
+
+ADD_GEN_ROOT_DICT(${TargetName} "${headers_input}" "${LINKDEF_FILE}" "${MY_INCLUDE_DIRECTORIES}")
+
+endfunction()
+
+FUNCTION(FIND_ROOT_OBJECTS header_input patter closingPattern outputVar)
+set(linkDef_content "")
+foreach(loop_var ${headers_input})
+	FILE(READ "${loop_var}" contents)
+	FOREACH(line ${contents})
+		STRING(FIND "${line}" ${patter} matchres)
+		If( NOT(${matchres}  EQUAL -1))
+			string(SUBSTRING ${line} ${matchres} 60 substr)
+			STRING(FIND "${substr}" " " matchres)
+			string(SUBSTRING ${substr} ${matchres}  60 substr)
+			STRING(FIND "${substr}" "${closingPattern}" matchres)
+			string(SUBSTRING ${substr} 1  ${matchres} substr)
+			STRING( REPLACE "${closingPattern}" " " substr ${substr})
+			list(APPEND  linkDef_content ${substr})
+		ENDIF()
+
+	endforeach(line)
+	
+    
+endforeach(loop_var)
+set(${outputVar} ${linkDef_content} PARENT_SCOPE)
+ENDFUNCTION()
+
+
+function(ADD_GEN_ROOT_DICT_AUTO_LINK TargetName MY_INCLUDE_DIRECTORIES)
+#PREPEND(MY_INCLUDE_DIRECTORIES " -I" ${MY_INCLUDE_DIRECTORIES})
+
+
+file(GLOB_RECURSE headers_input "*.hpp")
+set(ROOTCLASSES "")
+FIND_ROOT_OBJECTS("${headers_input}" "ROOTCLASS" "{" ROOTCLASSES )
+
+	
+
+set(ROOTFUNCTIONs "")
+FIND_ROOT_OBJECTS("${headers_input}" "ROOTFUNCTION" "\(" ROOTFUNCTIONs )
+	
+
+set(LINKDEF_FILE "${CMAKE_CURRENT_BINARY_DIR}/autoLinkDef.hh")
+file(WRITE ${LINKDEF_FILE} "#ifdef __CINT__ \n" )
+
+foreach(VAR ${ROOTCLASSES})
+	file(APPEND  ${LINKDEF_FILE} "#pragma link C++ class  ${VAR}; \n" )
+endforeach(VAR)
+
+foreach(VAR ${ROOTFUNCTIONs})
+	file(APPEND  ${LINKDEF_FILE} "#pragma link C++ function  ${VAR}; \n" )
+endforeach(VAR)
+
+file(APPEND  ${LINKDEF_FILE} "#endif //__CINT__ \n" )
+#file(GLOB_RECURSE LINKDEF_FILE "*LinkDef.hh")
+
+
 
 ADD_GEN_ROOT_DICT(${TargetName} "${headers_input}" "${LINKDEF_FILE}" "${MY_INCLUDE_DIRECTORIES}")
 
