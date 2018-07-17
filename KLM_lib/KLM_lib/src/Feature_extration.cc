@@ -9,7 +9,7 @@
 
 
 #include "KLM_lib/Feature_extraction.hpp"
-
+#include "KLM_lib/extract_gradient.hpp"
 
 
 
@@ -43,11 +43,23 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 	//out_tree->SetDirectory(outFile->GetDirectory());
 	feature_branch counter_branch(out_tree, "counter");
 	feature_branch branch_peak(out_tree, "peak");
+  feature_branch branch_peak_gradient(out_tree, "peak_gradient");
 	feature_branch branch_falling_edge(out_tree, "falling_edge");
 	feature_branch branch_rising_edge(out_tree, "rising_edge");
 	feature_branch branch_TOT(out_tree, "TOT");
-	adc_count_branch branch_adc(out_tree, "adc_counts");
-	adc_count_branch branch_adc_x(out_tree, "adc_x");
+	adc_count_branch<int> branch_adc(out_tree, "adc_counts");
+	adc_count_branch<int> branch_adc_x(out_tree, "adc_x");
+  adc_count_branch<int> branch_gradient(out_tree, "gradient");
+  
+  
+  adc_count_branch<double> branch_gradient_a2(out_tree, "gradient_a2");
+  feature_branch branch_peak_gradient_a2(out_tree, "peak_gradient_a2");
+
+  adc_count_branch<double> branch_gradient_a4(out_tree, "gradient_a4");
+  feature_branch branch_peak_gradient_a4(out_tree, "peak_gradient_a4");
+
+  adc_count_branch<double> branch_gradient_a6(out_tree, "gradient_a6");
+  feature_branch branch_peak_gradient_a6(out_tree, "peak_gradient_a6");
 
 	branch_adc_x << get_x();
 
@@ -68,6 +80,25 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 		counter_branch << counter;
 
 		branch_TOT << extract_time_over_threshold(vec1, 200, 250);
+    auto grad =  extract_gradient(vec1);
+    branch_gradient << grad;
+    branch_peak_gradient << extract_peak(grad);
+
+    auto grad_a2 = extract_gradient_Accuracy2(vec1);
+    branch_gradient_a2 << grad_a2;
+    branch_peak_gradient_a2 << extract_peak(grad_a2);
+
+
+    auto grad_a4 = extract_gradient_Accuracy4(vec1);
+    branch_gradient_a4 << grad_a4;
+    branch_peak_gradient_a4 << extract_peak(grad_a4);
+
+
+    auto grad_a6 = extract_gradient_Accuracy6(vec1);
+    branch_gradient_a6 << grad_a6;
+    branch_peak_gradient_a6 << extract_peak(grad_a6);
+
+
 
 		branch_adc << t1->ADC_counts[ChannelNr];
 		out_tree->Fill();

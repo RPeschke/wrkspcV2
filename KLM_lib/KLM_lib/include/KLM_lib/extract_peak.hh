@@ -4,7 +4,8 @@
 #include <vector>
 
 
-inline feature extract_peak(const std::vector<int>& ADC_counts) {
+template <typename T>
+inline feature extract_peak(const std::vector<T>& ADC_counts) {
 
 
 	feature max_element;
