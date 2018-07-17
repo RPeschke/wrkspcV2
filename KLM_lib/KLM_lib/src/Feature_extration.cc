@@ -10,6 +10,7 @@
 
 #include "KLM_lib/Feature_extraction.hpp"
 #include "KLM_lib/extract_gradient.hpp"
+#include "KLM_lib/look_for_after_pulsing.hpp"
 
 
 
@@ -50,6 +51,7 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 	adc_count_branch<int> branch_adc(out_tree, "adc_counts");
 	adc_count_branch<int> branch_adc_x(out_tree, "adc_x");
   adc_count_branch<int> branch_gradient(out_tree, "gradient");
+	feature_branch branch_after_pulse(out_tree, "after_pulse");
   
   
   adc_count_branch<double> branch_gradient_a2(out_tree, "gradient_a2");
@@ -60,7 +62,6 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 
   adc_count_branch<double> branch_gradient_a6(out_tree, "gradient_a6");
   feature_branch branch_peak_gradient_a6(out_tree, "peak_gradient_a6");
-
 	branch_adc_x << get_x();
 
 	for (int i = 0; i < tree->GetEntries() - 1; ++i) {
@@ -80,6 +81,7 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 		counter_branch << counter;
 
 		branch_TOT << extract_time_over_threshold(vec1, 200, 250);
+    branch_after_pulse<< look_for_after_pulsing(vec1);
     auto grad =  extract_gradient(vec1);
     branch_gradient << grad;
     branch_peak_gradient << extract_peak(grad);
@@ -97,7 +99,6 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
     auto grad_a6 = extract_gradient_Accuracy6(vec1);
     branch_gradient_a6 << grad_a6;
     branch_peak_gradient_a6 << extract_peak(grad_a6);
-
 
 
 		branch_adc << t1->ADC_counts[ChannelNr];
@@ -119,4 +120,3 @@ void Feature_extraction_read_file2(const std::string& fileName, const std::strin
 	Feature_extraction_read_file(fileName.c_str(), "tree", 14, &out1);
 	Feature_extraction_read_file(fileName.c_str(), "tree", 0, &out1);
 }
-
