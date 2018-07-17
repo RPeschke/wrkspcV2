@@ -2,6 +2,7 @@
 *.log
 !.gitignore
 =======
+*.*~
 *.root
 .vscode/*
 KLM_lib/lib/*
