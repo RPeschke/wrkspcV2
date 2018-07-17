@@ -377,27 +377,19 @@ ADD_GEN_ROOT_DICT(${TargetName} "${headers_input}" "${LINKDEF_FILE}" "${MY_INCLU
 endfunction()
 
 FUNCTION(FIND_ROOT_OBJECTS header_input patter closingPattern outputVar)
-#MESSAGE("<header_input>")
-#MESSAGE(${header_input})
-#MESSAGE("</header_input>")
 set(linkDef_content "")
 foreach(loop_var ${headers_input})
-	#MESSAGE(${loop_var})
 	FILE(READ "${loop_var}" contents)
 	FOREACH(line ${contents})
 		STRING(FIND "${line}" ${patter} matchres)
 		If( NOT(${matchres}  EQUAL -1))
-			#string(SUBSTRING ${line} 20 60 substr TRUNCATE)
 			string(SUBSTRING ${line} ${matchres} 60 substr)
 			STRING(FIND "${substr}" " " matchres)
-			MESSAGE(${matchres})
 			string(SUBSTRING ${substr} ${matchres}  60 substr)
 			STRING(FIND "${substr}" "${closingPattern}" matchres)
 			string(SUBSTRING ${substr} 1  ${matchres} substr)
 			STRING( REPLACE "${closingPattern}" " " substr ${substr})
-			#STRING(REGEX MATCH "ROOTCLASS.*\(.*\)" input_directive "${line}")
 			list(APPEND  linkDef_content ${substr})
-			MESSAGE(${substr})		
 		ENDIF()
 
 	endforeach(line)
@@ -416,11 +408,11 @@ file(GLOB_RECURSE headers_input "*.hpp")
 set(ROOTCLASSES "")
 FIND_ROOT_OBJECTS("${headers_input}" "ROOTCLASS" "{" ROOTCLASSES )
 
-#MESSAGE(${ROOTCLASSES})		
+	
 
 set(ROOTFUNCTIONs "")
 FIND_ROOT_OBJECTS("${headers_input}" "ROOTFUNCTION" "\(" ROOTFUNCTIONs )
-#MESSAGE(${ROOTFUNCTIONs})		
+	
 
 set(LINKDEF_FILE "${CMAKE_CURRENT_BINARY_DIR}/autoLinkDef.hh")
 file(WRITE ${LINKDEF_FILE} "#ifdef __CINT__ \n" )
