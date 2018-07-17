@@ -54,7 +54,7 @@ public :
    TBranch        *b_TimeOverThr;   //!
 
    KLM_Tree(TTree *tree=0);
-   virtual ~KLM_Tree();
+
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
@@ -74,11 +74,7 @@ KLM_Tree::KLM_Tree(TTree *tree) : fChain(0)
    Init(tree);
 }
 
-KLM_Tree::~KLM_Tree()
-{
-   if (!fChain) return;
-   delete fChain->GetCurrentFile();
-}
+
 
 Int_t KLM_Tree::GetEntry(Long64_t entry)
 {

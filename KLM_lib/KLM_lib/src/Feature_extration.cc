@@ -25,21 +25,23 @@ std::vector<int> get_x() {
 	return ret;
 }
 
-void Feature_extraction_read_file(const std::string& fileName, const std::string& TreeName, int ChannelNr, TFile* outFile) {
-
-
-	TFile *_file0 = TFile::Open(fileName.c_str());
-	auto tree = dynamic_cast<TTree*>(_file0->Get(TreeName.c_str()));
-
-	auto t1 = new  KLM_Tree(tree);
+void Feature_extraction_read_file(TTree* tree, int ChannelNr, TFile* outFile) {
 
 
 
-	auto out_tree = [&] {
+
+  KLM_Tree t1(tree);
+
+
+
+	auto out_tree1 = [&] {
 		outFile->cd();
 		std::string branch_name = "features_" + std::to_string(ChannelNr);
-		return  new TTree(branch_name.c_str(), branch_name.c_str());
+		auto ret =   std::make_shared<TTree>(branch_name.c_str(), branch_name.c_str());
+    ret->SetDirectory(outFile->GetDirectory("/"));
+      return ret;
 	}();
+  auto out_tree = out_tree1.get();
 
 	//out_tree->SetDirectory(outFile->GetDirectory());
 	feature_branch counter_branch(out_tree, "counter");
@@ -67,8 +69,8 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 	for (int i = 0; i < tree->GetEntries() - 1; ++i) {
 
 
-		t1->GetEntry(i);
-		auto vec = to_vector(t1->ADC_counts[ChannelNr]);
+		t1.GetEntry(i);
+		auto vec = to_vector(t1.ADC_counts[ChannelNr]);
 		auto vec1 = filter_waveform(vec, 100);
 		branch_peak << extract_peak(vec1);
 		branch_falling_edge << extract_faling_edge(vec1, 202, 250);
@@ -101,22 +103,24 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
     branch_peak_gradient_a6 << extract_peak(grad_a6);
 
 
-		branch_adc << t1->ADC_counts[ChannelNr];
+		branch_adc << t1.ADC_counts[ChannelNr];
 		out_tree->Fill();
 
 	}
 
-	//   out_tree->Write();
-	std::cout << "fout->Write();\n";
-	outFile->Write();
-	std::cout << "/fout->Write();\n";
+	
+
+  out_tree->Write();
+
 
 }
 
 
 void Feature_extraction_read_file2(const std::string& fileName, const std::string& fileNameOut)
 {
+  TFile _file0(fileName.c_str());
 	TFile out1(fileNameOut.c_str(), "RECREATE");
-	Feature_extraction_read_file(fileName, "tree", 14, &out1);
-	Feature_extraction_read_file(fileName, "tree", 0, &out1);
+  auto tree = dynamic_cast<TTree*>(_file0.Get("tree"));
+	Feature_extraction_read_file(tree, 14, &out1);
+	Feature_extraction_read_file(tree, 0, &out1);
 }
