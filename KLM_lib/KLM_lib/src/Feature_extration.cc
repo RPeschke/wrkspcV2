@@ -117,6 +117,6 @@ void Feature_extraction_read_file(const std::string& fileName, const std::string
 void Feature_extraction_read_file2(const std::string& fileName, const std::string& fileNameOut)
 {
 	TFile out1(fileNameOut.c_str(), "RECREATE");
-	Feature_extraction_read_file(fileName.c_str(), "tree", 14, &out1);
-	Feature_extraction_read_file(fileName.c_str(), "tree", 0, &out1);
+	Feature_extraction_read_file(fileName, "tree", 14, &out1);
+	Feature_extraction_read_file(fileName, "tree", 0, &out1);
 }
