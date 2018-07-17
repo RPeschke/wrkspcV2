@@ -375,3 +375,69 @@ file(GLOB_RECURSE LINKDEF_FILE "*LinkDef.hh")
 ADD_GEN_ROOT_DICT(${TargetName} "${headers_input}" "${LINKDEF_FILE}" "${MY_INCLUDE_DIRECTORIES}")
 
 endfunction()
+
+FUNCTION(FIND_ROOT_OBJECTS header_input patter closingPattern outputVar)
+#MESSAGE("<header_input>")
+#MESSAGE(${header_input})
+#MESSAGE("</header_input>")
+set(linkDef_content "")
+foreach(loop_var ${headers_input})
+	#MESSAGE(${loop_var})
+	FILE(READ "${loop_var}" contents)
+	FOREACH(line ${contents})
+		STRING(FIND "${line}" ${patter} matchres)
+		If( NOT(${matchres}  EQUAL -1))
+			#string(SUBSTRING ${line} 20 60 substr TRUNCATE)
+			string(SUBSTRING ${line} ${matchres} 60 substr)
+			STRING(FIND "${substr}" " " matchres)
+			MESSAGE(${matchres})
+			string(SUBSTRING ${substr} ${matchres}  60 substr)
+			STRING(FIND "${substr}" "${closingPattern}" matchres)
+			string(SUBSTRING ${substr} 1  ${matchres} substr)
+			STRING( REPLACE "${closingPattern}" " " substr ${substr})
+			#STRING(REGEX MATCH "ROOTCLASS.*\(.*\)" input_directive "${line}")
+			list(APPEND  linkDef_content ${substr})
+			MESSAGE(${substr})		
+		ENDIF()
+
+	endforeach(line)
+	
+    
+endforeach(loop_var)
+set(${outputVar} ${linkDef_content} PARENT_SCOPE)
+ENDFUNCTION()
+
+
+function(ADD_GEN_ROOT_DICT_AUTO_LINK TargetName MY_INCLUDE_DIRECTORIES)
+#PREPEND(MY_INCLUDE_DIRECTORIES " -I" ${MY_INCLUDE_DIRECTORIES})
+
+
+file(GLOB_RECURSE headers_input "*.hpp")
+set(ROOTCLASSES "")
+FIND_ROOT_OBJECTS("${headers_input}" "ROOTCLASS" "{" ROOTCLASSES )
+
+#MESSAGE(${ROOTCLASSES})		
+
+set(ROOTFUNCTIONs "")
+FIND_ROOT_OBJECTS("${headers_input}" "ROOTFUNCTION" "\(" ROOTFUNCTIONs )
+#MESSAGE(${ROOTFUNCTIONs})		
+
+set(LINKDEF_FILE "${CMAKE_CURRENT_BINARY_DIR}/autoLinkDef.hh")
+file(WRITE ${LINKDEF_FILE} "#ifdef __CINT__ \n" )
+
+foreach(VAR ${ROOTCLASSES})
+	file(APPEND  ${LINKDEF_FILE} "#pragma link C++ class  ${VAR}; \n" )
+endforeach(VAR)
+
+foreach(VAR ${ROOTFUNCTIONs})
+	file(APPEND  ${LINKDEF_FILE} "#pragma link C++ function  ${VAR}; \n" )
+endforeach(VAR)
+
+file(APPEND  ${LINKDEF_FILE} "#endif //__CINT__ \n" )
+#file(GLOB_RECURSE LINKDEF_FILE "*LinkDef.hh")
+
+
+
+ADD_GEN_ROOT_DICT(${TargetName} "${headers_input}" "${LINKDEF_FILE}" "${MY_INCLUDE_DIRECTORIES}")
+
+endfunction()

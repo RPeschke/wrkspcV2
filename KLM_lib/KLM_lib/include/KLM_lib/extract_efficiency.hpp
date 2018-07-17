@@ -7,7 +7,7 @@
 #include <memory>
 #include <map>
 
-class DLLEXPORT ttree_filter {
+ROOTCLASS ttree_filter{
 public:
 	double m_nominal_value;
 	std::string name;
@@ -15,13 +15,13 @@ public:
 
 
 };
-DLLEXPORT std::vector<ttree_filter> filter_gt(std::string var, double);
-DLLEXPORT std::vector<ttree_filter> filter_lt(std::string var, double);
-DLLEXPORT std::vector<ttree_filter> condition(std::string var, double);
+std::vector<ttree_filter> ROOTFUNCTION filter_gt(std::string var, double);
+std::vector<ttree_filter> ROOTFUNCTION filter_lt(std::string var, double);
+std::vector<ttree_filter> ROOTFUNCTION condition(std::string var, double);
 
 DLLEXPORT std::vector<ttree_filter> operator+(std::vector<ttree_filter> in1, std::vector<ttree_filter> in2);
 
-class DLLEXPORT ttree_filter_branch {
+ROOTCLASS ttree_filter_branch {
 public:
 	ttree_filter_branch(TTree* out,std::string prefix = "");
 	ttree_filter_branch& operator<<(const std::vector<ttree_filter>& filter);
@@ -35,7 +35,7 @@ private:
 #endif
 };
 
-class DLLEXPORT efficiency { 
+ROOTCLASS efficiency{
 public:
 	
 	double m_efficiency;
@@ -45,14 +45,14 @@ public:
 };
 
 
-DLLEXPORT efficiency extract_efficiency(
+efficiency ROOTFUNCTION extract_efficiency(
 	TTree* inputTree, 
 	std::vector<ttree_filter> Input_Filter = std::vector<ttree_filter>(), 
 	TTree* referenceTree = 0, 
 	std::vector<ttree_filter> reference_filter = std::vector<ttree_filter>()
 );
 
-class DLLEXPORT ttree_efficiency_branch {
+ROOTCLASS ttree_efficiency_branch{
 public:
 	ttree_efficiency_branch(TTree* out);
 	ttree_efficiency_branch& operator<<(const efficiency&);
@@ -66,6 +66,6 @@ private:
 #endif
 };
 
-DLLEXPORT void extract_efficiency_to_ttree(const std::string& inFileName, const std::string& outFileName, std::vector<ttree_filter> Input_Filter = std::vector<ttree_filter>());
-DLLEXPORT void extract_efficiency_to_ttree2(TFile* inFileName, ttree_efficiency_branch& out_branch , std::vector<ttree_filter> Input_Filter = std::vector<ttree_filter>());
+void ROOTFUNCTION extract_efficiency_to_ttree(const std::string& inFileName, const std::string& outFileName, std::vector<ttree_filter> Input_Filter = std::vector<ttree_filter>());
+void ROOTFUNCTION extract_efficiency_to_ttree2(TFile* inFileName, ttree_efficiency_branch& out_branch , std::vector<ttree_filter> Input_Filter = std::vector<ttree_filter>());
 #endif // extract_efficiency_h__
