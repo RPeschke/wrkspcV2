@@ -9,12 +9,14 @@ feature look_for_after_pulsing(const std::vector<int>& ADC_counts){
   bool APflag = false;
   int APmax = 0, AP_startVal = 0;
 
-	for (size_t i = peak.time; i < ADC_counts.size(); i++) {
+	for (size_t i = peak.time+5; i < ADC_counts.size(); i++) {
     //if out of saturation region of preamp and rising for
     //two consecutive samples then we have an after pulse
     if (ADC_counts[i]   < peak.signal*0.9 &&
         ADC_counts[i]   > ADC_counts[i-1] &&
         ADC_counts[i-1] > ADC_counts[i-2] &&
+        ADC_counts[i-2] > ADC_counts[i-3] &&
+        ADC_counts[i-3] > ADC_counts[i-4] &&
         !APflag)
     {
           APflag = true;
