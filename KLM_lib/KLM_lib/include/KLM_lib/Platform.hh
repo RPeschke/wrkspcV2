@@ -24,6 +24,29 @@
 
 #include <memory>
 
+#ifdef WIN32
+#ifdef __CINT__
+#define ROOTCLASS class 
+#else
+#define  ROOTCLASS class   __declspec(dllexport) 
+#endif
+#else
+
+#define  ROOTCLASS class 
+
+#endif
+
+#ifdef WIN32
+#ifdef __CINT__
+#define ROOTFUNCTION 
+#else
+#define  ROOTFUNCTION  __declspec(dllexport) 
+#endif
+#else
+
+#define  ROOTFUNCTION 
+
+#endif
 
 
 #endif // INCLUDED_Platform

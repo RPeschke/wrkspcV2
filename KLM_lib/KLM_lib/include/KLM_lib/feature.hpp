@@ -6,7 +6,7 @@
 #include "TTree.h"
 #include "KLM_lib/Platform.hh"
 
-class feature {
+ROOTCLASS feature {
 public:
 	double time = -100, signal = -100;
 	TGraph* Draw(std::string options = "*");
@@ -17,7 +17,7 @@ std::ostream& operator<<(std::ostream& out, const feature& f);
 
 
 
-class DLLEXPORT feature_branch {
+ROOTCLASS feature_branch {
 public:
 	feature_branch(TTree* out_tree,const std::string& name);
 	feature_branch(const std::string& name);

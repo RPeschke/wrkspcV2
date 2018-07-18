@@ -19,6 +19,6 @@
 #include "KLM_Tree.hpp"
 #include "Platform.hh"
 
-DLLEXPORT void Feature_extraction_read_file(const std::string& fileName, const std::string& TreeName, int channelNr,TFile* out);
-DLLEXPORT void Feature_extraction_read_file2(const std::string& fileName, const std::string& fileNameOut);
+void ROOTFUNCTION Feature_extraction_read_file(TTree* tree, int ChannelNr, TFile* outFile);
+void ROOTFUNCTION Feature_extraction_read_file2(const std::string& fileName, const std::string& fileNameOut);
 #endif // Feature_extraction_h__
