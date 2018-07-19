@@ -70,7 +70,8 @@ class UDP:
         self.sock_trans = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # Set to broadcast mode
         self.sock_trans.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock_trans.setsockopt(socket.SOL_SOCKET, 25, self.interface)
+#        self.sock_trans.setsockopt(socket.SOL_SOCKET, 25, self.interface)
+        print("port_pc = " + str(self.port_pc))
         #self.sock_trans.setblocking(0)    # necessary for UDP
 
         # bind to all addr at this port
@@ -80,7 +81,7 @@ class UDP:
         # set up socket for UDP Protocol
         self.sock_rcv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # Set interface
-        self.sock_rcv.setsockopt(socket.SOL_SOCKET, 25, self.interface)
+#        self.sock_rcv.setsockopt(socket.SOL_SOCKET, 25, self.interface)
         self.sock_rcv.setblocking(0)    # necessary for UDP
         # bind to all addr at this port
         self.sock_rcv.bind(('',self.port_pc))
@@ -227,10 +228,10 @@ class UDP:
         # set up socket for UDP Protocol
         self.sock_rcv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # Set interface
-        self.sock_rcv.setsockopt(socket.SOL_SOCKET, 25, self.interface)
+#        self.sock_rcv.setsockopt(socket.SOL_SOCKET, 25, self.interface)
         self.sock_rcv.setblocking(0)    # necessary for UDP
-        # bind to all addr at this port
         self.sock_rcv.bind(('',self.port_pc))
+        # bind to all addr at this port
 
     def KLMprint(self, s, d): # added by C. Ketter
         ''' Input: s = string of HEX
