@@ -4,8 +4,8 @@
 #include <vector>
 
 
-feature look_for_after_pulsing(const std::vector<int>& ADC_counts);
+feature ROOTFUNCTION look_for_after_pulsing(const std::vector<int>& ADC_counts);
 
 
-#pragma link C++ function look_for_after_pulsing;
+
 #endif // look_for_after_pulsing_h__
