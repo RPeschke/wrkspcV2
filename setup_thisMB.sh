@@ -5,7 +5,13 @@ echo "If you see abnormal behaviour, please use 'ps -au'"
 echo "command then kill the related python processes using"
 echo "'sudo kill -9 PID' the start again."
 echo
-echo
+echo "If the script hangs up on 'reading scrod register 0,'"
+echo "check that the media converter is connected to the "
+echo "network as eth4. If it is connected and there are TX"
+echo "packets but no RX packets (ifconfig), then check that"
+echo "the route is present by typing 'route'."
+echo "You can add a new route with the command:"
+echo "sudo ip route add 192.168.20.0/24 dev eth4"
 echo
 #echo "ENTER the interface type:"
 #echo "e.g. >>>eth4"
@@ -25,6 +31,7 @@ ASICmask=$(bc<<<"obase=10;ibase=2;$binMask")
 #echo
 echo "Reprogramming FPGA..."
 sudo /bin/bash lib/progFPGA.sh
+sudo ip route add 192.168.20.0/24 dev eth4
 echo "Waiting 30 seconds..."
 sleep 30
 echo "Reading SCROD register 0"
