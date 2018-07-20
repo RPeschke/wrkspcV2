@@ -19,10 +19,11 @@ chmod +x tst_sendUDP.py
 
 import sys
 import os
-SCRIPTPATH = os.path.dirname(__file__)
-#sys.path.append( SCRIPTPATH+'/lib/' )
-import linkEth
 import time
+#SCRIPTPATH = os.path.dirname(__file__)
+#sys.path.append( SCRIPTPATH+'/lib/' )
+sys.path.append( os.getcwd()+'/lib/' )
+import linkEth
 
 usageMSG="Usage: setMBTXConfig <interface> \n This command will set the config parameters of all the ASICs on the MB"
 if len(sys.argv)!=2:

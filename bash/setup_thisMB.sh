@@ -30,20 +30,20 @@ fi
 ASICmask=$(bc<<<"obase=10;ibase=2;$binMask")
 #echo
 echo "Reprogramming FPGA..."
-sudo /bin/bash lib/progFPGA.sh
+sudo /bin/bash bash/progFPGA.sh
 sudo ip route add 192.168.20.0/24 dev eth4
 echo "Waiting 30 seconds..."
 sleep 30
 echo "Reading SCROD register 0"
-sudo ./lib/readRegScrod.py $InterfaceType 0
+sudo ./py/MicroProcesses/readRegScrod.py $InterfaceType 0
 sleep .1
 echo
 echo "Setting ASIC and DAC configs..."
-sudo ./lib/setMBTXConfig.py $InterfaceType
+sudo ./py/Config/setMBTXConfig.py $InterfaceType
 sleep .1
 echo "                               ...Set Config-done."
 echo "Reading SCROD register 0."
-sudo ./lib/readRegScrod.py $InterfaceType 0
+sudo ./py/MicroProcesses/readRegScrod.py $InterfaceType 0
 sleep .1
 echo
 echo "Now calculating pedestals:"
@@ -52,7 +52,7 @@ do
 	if [ $(($(bc<<<"2^$i")&$ASICmask)) -gt 0 ]
 	then
 		echo "Calculating pedestals for ASIC $i ..."
-		sudo ./lib/pedcalc.py $InterfaceType $i
+		sudo ./py/MicroProcesses/pedcalc.py $InterfaceType $i
 		sleep .1
 	else
 		echo "Skipping ASIC $i....................."

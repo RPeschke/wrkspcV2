@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-
-#tx_ethtrigscan1 <interface>
-
 import sys
 import time
 import os
 #SCRIPTPATH = os.path.dirname(__file__)
 #sys.path.append( SCRIPTPATH+'/lib/' )
+sys.path.append( os.getcwd()+'/lib/' )
 import linkEth
 
 syncwd="000000010253594e4300000000" # must be send before every command string
@@ -23,10 +21,9 @@ port_pc = '28672'
 port_fpga = '24576'
 interface = sys.argv[1]
 
-
 # Make UDP class for receiving/sending UDP Packets
 ctrl = linkEth.UDP(addr_fpga, port_fpga, addr_pc, port_pc, interface)
-
+print("Opening connection")
 ctrl.open()
 
 regNo=int(sys.argv[2],10)

@@ -8,12 +8,11 @@ Bronson Edralin <bedralin@hawaii.edu> and  Isar Mostafanezhad
 University of Hawaii at Manoa
 Instrumentation Development Lab (IDLab), WAT214
 '''
-
-
 import sys
 import os
-SCRIPTPATH = os.path.dirname(__file__)
+#SCRIPTPATH = os.path.dirname(__file__)
 #sys.path.append( SCRIPTPATH+'/lib/' )
+sys.path.append( os.getcwd()+'/lib/' )
 import linkEth
 import time
 
