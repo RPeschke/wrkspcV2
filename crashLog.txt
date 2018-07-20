@@ -1,0 +1,15 @@
+# Crash log
+#
+# Copy and paste strange error messages here with a short description
+
+July 19 2018: previously unseen error during data collection
+Note: yesterday we removed 'setsockopt' commands from linkEth.py
+      so we could run without 'sudo.' It ran fine overnight but
+      then threw this message shortly after starting next set of
+      data collection.
+# ........Traceback (most recent call last):
+#   File "./ExampleSteeringScript.py", line 230, in <module>
+#     rcv = ctrl.receive(20000)# rcv is string of Hex
+#   File "/home/testbench2/gitDevWrkspc/lib/linkEth.py", line 123, in receive
+#     inputrdy, outputrdy, exceptrdy = select.select(CONNECTION_LIST, [], [])
+# select.error: (4, 'Interrupted system call')
