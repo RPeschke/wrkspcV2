@@ -1,8 +1,8 @@
 import glob, os
 import time
 class FileHandshake:
-    FileName="../temp/handshake.txt"
-    stop_fileName = "../temp/stopHandShake.txt"
+    FileName="temp/handshake.txt"
+    stop_fileName = "temp/stopHandShake.txt"
     def wait_for_file(self):
         while 1:
             found = glob.glob(self.FileName)

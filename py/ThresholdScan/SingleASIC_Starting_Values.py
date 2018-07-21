@@ -8,8 +8,9 @@ from array import array
 sys.path.append('/home/testbench2/root_6_08/lib')
 from ROOT import TCanvas, TGraph
 from ROOT import gROOT, TF1
-SCRIPTPATH = os.getcwd()#os.path.dirname(__file__)
-sys.path.append( SCRIPTPATH+'/lib/' )
+#SCRIPTPATH = os.path.dirname(__file__)
+#sys.path.append( SCRIPTPATH+'/lib/' )
+sys.path.append( os.getcwd()+'/lib/' )
 import linkEth
 t1=time.time()
 
@@ -191,7 +192,6 @@ outfile.close()
 ctrl.close()
 
 deltaTime = (time.time()-t1)/60
-print "\nCalibration Completed in %.2f min." % deltaTime
 print "\nResults:"
 print "\nThreshold base:"
 print(thBase)
@@ -200,3 +200,4 @@ print(hvLow)
 print "\n\nHV high values:"
 print(hvHigh)
 print "Writing calibration values in %s" % calib_file_name
+print "\nCalibration Completed in %.2f min.\n" % deltaTime
