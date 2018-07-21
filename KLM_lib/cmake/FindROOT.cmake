@@ -383,9 +383,9 @@ foreach(loop_var ${headers_input})
 	FOREACH(line ${contents})
 		STRING(FIND "${line}" ${patter} matchres)
 		If( NOT(${matchres}  EQUAL -1))
-			string(SUBSTRING ${line} ${matchres} 60 substr)
+			string(SUBSTRING ${line} ${matchres} 600 substr)
 			STRING(FIND "${substr}" " " matchres)
-			string(SUBSTRING ${substr} ${matchres}  60 substr)
+			string(SUBSTRING ${substr} ${matchres}  600 substr)
 			STRING(FIND "${substr}" "${closingPattern}" matchres)
 			string(SUBSTRING ${substr} 1  ${matchres} substr)
 			STRING( REPLACE "${closingPattern}" " " substr ${substr})
@@ -405,14 +405,22 @@ function(ADD_GEN_ROOT_DICT_AUTO_LINK TargetName MY_INCLUDE_DIRECTORIES)
 
 
 file(GLOB_RECURSE headers_input "*.hpp")
-set(ROOTCLASSES "")
+
 FIND_ROOT_OBJECTS("${headers_input}" "ROOTCLASS" "{" ROOTCLASSES )
 
 	
 
-set(ROOTFUNCTIONs "")
+
 FIND_ROOT_OBJECTS("${headers_input}" "ROOTFUNCTION" "\(" ROOTFUNCTIONs )
-	
+
+
+FIND_ROOT_OBJECTS("${headers_input}" "ROOTFUNCTION operator" ";" ROOToperators1 )
+
+
+FIND_ROOT_OBJECTS("${headers_input}" "ROOTFUNCTION  operator" ";" ROOToperators2 )
+
+FIND_ROOT_OBJECTS("${headers_input}" "ROOTFUNCTION   operator" ";" ROOToperators3 )
+
 
 set(LINKDEF_FILE "${CMAKE_CURRENT_BINARY_DIR}/autoLinkDef.hh")
 file(WRITE ${LINKDEF_FILE} "#ifdef __CINT__ \n" )
@@ -422,6 +430,19 @@ foreach(VAR ${ROOTCLASSES})
 endforeach(VAR)
 
 foreach(VAR ${ROOTFUNCTIONs})
+	STRING(FIND "${VAR}" "operator" matchres)
+	if(${matchres} EQUAL -1)
+		file(APPEND  ${LINKDEF_FILE} "#pragma link C++ function  ${VAR}; \n" )
+	endif()
+endforeach(VAR)
+
+foreach(VAR ${ROOToperators1})
+	file(APPEND  ${LINKDEF_FILE} "#pragma link C++ function  ${VAR}; \n" )
+endforeach(VAR)
+foreach(VAR ${ROOToperators2})
+	file(APPEND  ${LINKDEF_FILE} "#pragma link C++ function  ${VAR}; \n" )
+endforeach(VAR)
+foreach(VAR ${ROOToperators3})
 	file(APPEND  ${LINKDEF_FILE} "#pragma link C++ function  ${VAR}; \n" )
 endforeach(VAR)
 
