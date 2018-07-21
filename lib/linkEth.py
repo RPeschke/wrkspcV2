@@ -13,21 +13,21 @@ import sys, time
 import socket
 import select
 import binascii
-import re
 
+NORM       =  "\033[m"
+BOLD       =  "\033[1m"
+FAINT      =  "\033[2m"
+SOFT       =  "\033[95m"
+OKBLUE     =  "\033[94m"
+OKGREEN    =  "\033[92m"
+WARNING    =  "\033[93m"
+FATAL      =  "\033[1;91m"
+UNDERLINE  =  "\033[4m"
+BCYAN      =  "\033[1;96m"
+BROWN      =  "\033[33m"
+def Print(c,s):
+    print"%s%s%s"%(c,str(s),NORM)
 DEBUG = 0
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    CYAN = '\033[96m'
-    BROWN = '\033[33m'
 
 def asciiToHex(s):
     ''' Input:  s = string of ASCII chars
@@ -71,7 +71,6 @@ class UDP:
         # Set to broadcast mode
         self.sock_trans.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 #        self.sock_trans.setsockopt(socket.SOL_SOCKET, 25, self.interface)
-        print("port_pc = " + str(self.port_pc))
         #self.sock_trans.setblocking(0)    # necessary for UDP
 
         # bind to all addr at this port
@@ -151,7 +150,7 @@ class UDP:
                             print "----------------------------------------------------------\n"
                         done = True
                     except Exception, e:
-                        print bcolors.FAIL+"Error!!! %s" % (e) + bcolors.ENDC
+                        Print(FATAL,"Error!!! %s" % e)
                         i.close()
                         CONNECTION_LIST.remove(i)
                         #CONNECTION_LIST.append(self.sock_rcv)
@@ -232,48 +231,3 @@ class UDP:
         self.sock_rcv.setblocking(0)    # necessary for UDP
         self.sock_rcv.bind(('',self.port_pc))
         # bind to all addr at this port
-
-    def KLMprint(self, s, d): # added by C. Ketter
-        ''' Input: s = string of HEX
-                   d = description
-            Output: Device, register No., 16-bit binary word '''
-        print d.center(42, "-") # packet heading, user specified
-        if (s[0:26] == "000000010253594e4300000000"): #remove syncword if present
-            s = s[26:]
-        # convert packet into 8-char-word list
-        wlst = map(''.join, zip(*[iter(s)]*8))
-        # convert last for characters of each word into binary
-        bits = [bin(int(entry[4], 16))[2:].zfill(4)+" "+bin(int(entry[5], 16))[2:].zfill(4)+" "+bin(int(entry[6], 16))[2:].zfill(4)+" "+bin(int(entry[7], 16))[2:].zfill(4)+" " for entry in wlst]
-        for i in range(len(wlst)):
-            if   (wlst[i][0:2] == "AE" or wlst[i][0:2] == "ae"):
-                print "Wait %d" % int(wlst[i][4:8], 16)
-            elif (wlst[i][0:2] == "AF" or wlst[i][0:2] == "af"):
-                print "SCROD  Register: %-4d  %s  (%d)" % (int(wlst[i][2:4], 16), bits[i], int(wlst[i][4:8], 16))
-            elif (wlst[i][0:2] == "C0" or wlst[i][0:2] == "c0"):
-                print "HV, ASIC: %d, Ch: %-2d trimDAC: %d" % (int(wlst[i][2], 16), int(wlst[i][3], 16), int(wlst[i][6:8], 16))
-            elif (wlst[i][0]   == "B"  or wlst[i][0]   == "b"):
-                print "ASIC_%s Register: %-4d  %s  (%d)" % (wlst[i][1], int(wlst[i][2:4], 16), bits[i], int(wlst[i][4:8], 16))
-            else:
-                print "(other) HEX word: %s" % wlst[i]
-        print
-
-
-'''
-addr_fpga = '192.168.20.5'
-addr_pc = '192.168.20.1'
-port_pc = '28672'
-port_fpga = '24576'
-interface = 'eth1'
-ctrl = UDP(addr_fpga, port_fpga, addr_pc, port_pc, interface)
-data = 'Hi FPGA!!!!!!'
-data_hex = str(asciiToHex(data))
-print "data_hex: ",data_hex
-ctrl.send(data_hex)
-
-data = 'Hi Man...'
-data_hex = str(asciiToHex(data))
-print "data_hex: ",data_hex
-ctrl.send(data_hex)
-
-ctrl.receive('1024')
-'''
