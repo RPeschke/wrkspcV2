@@ -19,7 +19,8 @@ std::vector<ttree_filter> ROOTFUNCTION filter_gt(std::string var, double);
 std::vector<ttree_filter> ROOTFUNCTION filter_lt(std::string var, double);
 std::vector<ttree_filter> ROOTFUNCTION condition(std::string var, double);
 
-DLLEXPORT std::vector<ttree_filter> operator+(std::vector<ttree_filter> in1, std::vector<ttree_filter> in2);
+std::vector<ttree_filter> ROOTFUNCTION operator+(std::vector<ttree_filter>, std::vector<ttree_filter>);
+
 
 ROOTCLASS ttree_filter_branch {
 public:
