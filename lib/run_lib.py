@@ -103,23 +103,6 @@ class CmdLineArgHandler:
             Print(OKGREEN, hvList)
         return hvList
 
-    def pauseForReprogram(self,hs,ctrl,cmd):
-        Print(SOFT, "Pausing data collection\nRaising HV trim DACs")
-        Print(BCYAN, "Closing port\nStarting handshake . . .")
-        tProgStart = time.time()
-        ctrl.send(cmd.HVoff(0))
-        time.sleep(0.1)
-        ctrl.close()
-        hs.start_handshake()
-        Print(BCYAN, "Return-handshake acknowledged\nOpening port")
-        ctrl.open()
-        time.sleep(0.2)
-        Print(SOFT, "Sending run configuration to FPGA")
-        ctrl.send(cmd.RunConfig)
-        time.sleep(0.2)
-        Print(SOFT, "Resuming data collection")
-        return(time.time()-tProgStart)
-
     def ConfigureTXandFPGA(self,ctrl,cmd):
         Print(SOFT, "Opening port\nSending run configuration to FPGA")
         Print(SOFT, "Opening binary data file for writing")
@@ -130,22 +113,6 @@ class CmdLineArgHandler:
         t0 = tProg = time.time()
         f = open(self.binDatafile,'wb') #a=append, w=write, b=binary
         return (t0,f)
-
-    def printPseudoStatusBar(self,evtNum):
-        if (self.NumEvts/400.<1.):
-            multiplier = 1
-        elif (self.NumEvts/4000.<1.):
-            multiplier = 10
-        elif (self.NumEvts/40000.<1.):
-            multiplier = 100
-        else:
-            multiplier = 1000
-        if (evtNum>0 and (evtNum%multiplier)==0):
-            sys.stdout.write('.')
-            sys.stdout.flush()
-        if ((evtNum>0 and (evtNum%(80*multiplier))==0) or evtNum==(self.NumEvts-1)):
-            sys.stdout.write("<--%d\n" % self.NumEvts)
-            sys.stdout.flush()
 
     def CheckTimeSinceLastReprogram(self,tProg):
         return time.time()-tProg > 12600
@@ -168,6 +135,39 @@ class CmdLineArgHandler:
             t2 = time.time()-t0
         self.EvtRate = (1+evtNum)/float(t2-tExtra)
         Print(SOFT, "\nOverall hit rate was %s%.2f Hz" % (OKGREEN,self.EvtRate))
+
+    def printPseudoStatusBar(self,evtNum):
+        if (self.NumEvts/400.<1.):
+            multiplier = 1
+        elif (self.NumEvts/4000.<1.):
+            multiplier = 10
+        elif (self.NumEvts/40000.<1.):
+            multiplier = 100
+        else:
+            multiplier = 1000
+        if (evtNum>0 and (evtNum%multiplier)==0):
+            sys.stdout.write('.')
+            sys.stdout.flush()
+        if ((evtNum>0 and (evtNum%(80*multiplier))==0) or evtNum==(self.NumEvts-1)):
+            sys.stdout.write("<--%d\n" % self.NumEvts)
+            sys.stdout.flush()
+
+    def pauseForReprogram(self,hs,ctrl,cmd):
+        Print(SOFT, "Pausing data collection\nRaising HV trim DACs")
+        Print(BCYAN, "Closing port\nStarting handshake . . .")
+        tProgStart = time.time()
+        ctrl.send(cmd.HVoff(0))
+        time.sleep(0.1)
+        ctrl.close()
+        hs.start_handshake()
+        Print(BCYAN, "Return-handshake acknowledged\nOpening port")
+        ctrl.open()
+        time.sleep(0.2)
+        Print(SOFT, "Sending run configuration to FPGA")
+        ctrl.send(cmd.RunConfig)
+        time.sleep(0.2)
+        Print(SOFT, "Resuming data collection")
+        return(time.time()-tProgStart)
 
     def TurnOffTrigsAndHV_ClosePortsAndFiles(self,ctrl,cmd,f):
         Print(SOFT, "Disabling ASIC triggering\nRaising HV trim DACs\nClosing port\nClosing data file")
