@@ -1,7 +1,8 @@
 <<<<<<< HEAD
-*.log
 !.gitignore
 =======
+*.log
+*_impact.cmd
 *.*~
 *.root
 .vscode/*
