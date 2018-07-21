@@ -20,7 +20,7 @@ void WriteParametersToRootFile(
     HVtrimDAC[ch]  = (int)HV_DAC[ch];
   }
 
-  TFile* file = new TFile(root_file, "RECREATE");
+  TFile* file = new TFile(root_file, "UPDATE");
   TTree* tree = new TTree("parameters","Data collection parameters");
 
   tree->Branch("RawHV", &RawHV, "RawHV_V/F");
