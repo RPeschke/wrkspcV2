@@ -4,13 +4,19 @@
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
+#include "TTree.h"
 #include "TH2.h"
 #include "TGraph.h"
 #include <memory>
-class MBevent {
-public :
+#include "KLM_lib/Platform.hh"
 
+class TTree;
+
+ROOTCLASS MBevent {
+public :
+#ifndef __CINT__
   std::shared_ptr<TTree>          fChain;
+#endif
   // Declaration of leaf types
 
   Int_t           EvtNum;
