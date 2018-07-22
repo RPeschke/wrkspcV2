@@ -1,14 +1,8 @@
 #!/usr/bin/env python
-import sys
-import time
+import sys, os, time, csv, numpy as np
 from time import strftime
-import os
-import csv
 sys.path.append( os.getcwd() )
-import linkEth
-import cmd_lib
-import FileHandshake
-import numpy as np
+import linkEth, cmd_lib, FileHandshake
 sys.path.append('/home/testbench2/root_6_08/lib')
 import ROOT
 ROOT.gROOT.LoadMacro("root/TTreeMgmt/MakeMBeventTTree.cxx")
@@ -37,6 +31,7 @@ class CmdLineArgHandler:
         if (len(sys.argv)!=3):
             Print(FATAL, usageMSG)
             exit(-1)
+        self.t0                = time.time()
         self.SN                = str(sys.argv[1])
         self.strHV             = str(sys.argv[2])
         self.rawHV             = float(self.strHV.replace("p","."))
@@ -103,27 +98,27 @@ class CmdLineArgHandler:
             Print(OKGREEN, hvList)
         return hvList
 
-    def ConfigureTXandFPGA(self,ctrl,cmd):
+    def ConfigureTXandFPGA(self,ctrl,cmd,ASIC):
         Print(SOFT, "Opening port\nSending run configuration to FPGA")
         Print(SOFT, "Opening binary data file for writing")
+        cmd.RunConfig = cmd.Generate_ASIC_triggered_run_config_cmd(ASIC)
         ctrl.open()
         time.sleep(0.2)
         ctrl.send(cmd.RunConfig)
         time.sleep(0.1)
-        t0 = tProg = time.time()
         f = open(self.binDatafile,'wb') #a=append, w=write, b=binary
-        return (t0,f)
+        return f
 
     def CheckTimeSinceLastReprogram(self,tProg):
         return time.time()-tProg > 12600
 
-    def MainDataCollectionLoop(self,ctrl,cmd,f,t0):
+    def MainDataCollectionLoop(self,ctrl,cmd,f):
         tExtra = 0
         evtNum = 0
-        tProg = t0
+        tProg = t0 = time.time()
         hs = FileHandshake.FileHandshake()
         Print(SOFT, "\nTaking %s events. . ." % (self.NumEvts))
-        for evtNum in range(0, self.NumEvts):
+        for evtNum in range(1, self.NumEvts+1):
             if (self.CheckTimeSinceLastReprogram(tProg)):
                 tExtra += self.pauseForReprogram(hs,ctrl,cmd)
                 tProg = time.time()
@@ -132,8 +127,7 @@ class CmdLineArgHandler:
             self.printPseudoStatusBar(evtNum)
             rcv = linkEth.hexToBin(rcv)
             f.write(rcv) # write received binary data into file
-            t2 = time.time()-t0
-        self.EvtRate = (1+evtNum)/float(t2-tExtra)
+        self.EvtRate = float(evtNum)/(time.time()-t0-tExtra)
         Print(SOFT, "\nOverall hit rate was %s%.2f Hz" % (OKGREEN,self.EvtRate))
 
     def printPseudoStatusBar(self,evtNum):
@@ -145,11 +139,11 @@ class CmdLineArgHandler:
             multiplier = 100
         else:
             multiplier = 1000
-        if (evtNum>0 and (evtNum%multiplier)==0):
+        if (evtNum%multiplier==0):
             sys.stdout.write('.')
             sys.stdout.flush()
-        if ((evtNum>0 and (evtNum%(80*multiplier))==0) or evtNum==(self.NumEvts-1)):
-            sys.stdout.write("<--%d\n" % self.NumEvts)
+        if ( (evtNum%(80*multiplier)==0) or evtNum==(self.NumEvts) ):
+            sys.stdout.write("<--%d\n" % evtNum)
             sys.stdout.flush()
 
     def pauseForReprogram(self,hs,ctrl,cmd):
