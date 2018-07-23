@@ -25,7 +25,6 @@ class CMD:#class used to generate UDP packets for sending over ethernet
         self.syncwd = "000000010253594e4300000000"
         self.forceTrig = self.syncwd + "AF00FFFF"+"AF00FFFF"+"AF370001"+"AE000001"+"AF370000"+"AE000001"+"AF320001"+"AE000001"+"AF320000" # modified original from AF00FFF+AF00FFFFF / CK
         self.turnOffASICtriggering = self.syncwd + "AF270000" + "AE000100"
-        self.RunConfig = ""
 
     def KLMprint(self, s, d): # used to decode a UDP packet and print to terminal
             ##    Input: s = string of HEX
@@ -51,10 +50,12 @@ class CMD:#class used to generate UDP packets for sending over ethernet
                 Print(SOFT, "(other) HEX word: %s" % wlst[i])
         print
 
-    def HVoff(self,ASIC):
+    def HVoff(self):
         cmd = self.syncwd
-        for ch in range(15):
-            cmd += hex( int('C',16)*(2**28) | ASIC*(2**20) | (ch)*(2**16) | 255 ).split('x')[1]
+        for ASIC in range(10):
+            if ((2**ASIC & int(self.run.ASICmask,2)) > 0):
+                for ch in range(15):
+                    cmd += hex( int('C',16)*(2**28) | ASIC*(2**20) | (ch)*(2**16) | 255 ).split('x')[1]
         return cmd
 
     def ASIC_HV_DAC_w_offset(self, ASIC):
@@ -67,10 +68,12 @@ class CMD:#class used to generate UDP packets for sending over ethernet
                 cmd += hex( int('C',16)*(2**28) | ASIC*(2**20) | (ch)*(2**16) | 255).split('x')[1] +"AE000100"
         return cmd
 
-    def THoff(self,ASIC):
+    def THoff(self):
         cmd = self.syncwd
-        for ch in range(15):
-            cmd += hex( int('B',16)*(2**28) | ASIC*(2**24) | (2*ch)*(2**16) | 4095 ).split('x')[1]
+        for ASIC in range(10):
+            if ((2**ASIC & int(self.run.ASICmask,2)) > 0):
+                for ch in range(15):
+                    cmd += hex( int('B',16)*(2**28) | ASIC*(2**24) | (2*ch)*(2**16) | 4095 ).split('x')[1]
         return cmd
 
     def ASIC_Th_DAC_w_offset(self, ASIC):
@@ -97,13 +100,13 @@ class CMD:#class used to generate UDP packets for sending over ethernet
         cmd += "AF4F0002" # external trigger bit format
         return cmd
 
-    def Generate_Software_triggered_run_config_cmd(self):
+    def Generate_Software_triggered_run_config_cmd(self,ASIC):
         cmd  = self.syncwd
         cmd += "AF250000" + "AE000100" # disable ext. trig
-        cmd += hex(int('AF330000',16) | int(self.run.ASICmask,2)           ).split('x')[1] +"AE000100" # set asic number
+        cmd += hex(int('AF330000',16) | ASIC           ).split('x')[1] +"AE000100" # set asic number
         cmd += "AF3E8000"+"AE000100" # set win start
         cmd += "AF250000"+"AE000100" # disable ext. trig
-        cmd += hex(int('AF270000',16) | int(self.run.ASICmask,2)           ).split('x')[1] +"AE000100" # set trig mode & asic trig enable
+        cmd += hex(int('AF270000',16) | ASIC           ).split('x')[1] +"AE000100" # set trig mode & asic trig enable
         cmd += "AF360000" +"AE000100" # set win offset to zero
         cmd += hex(int('AF260000',16) | self.run.FWpedSubType*(2**12)      ).split('x')[1] +"AE000100" # CMDREG_PedDemuxFifoOutputSelect(13 downto 12)-->either wavfifo or pedfifo,CMDREG_PedSubCalcMode(10 downto 7)-->currently only using bit 7: 1 for peaks 2 for troughs, sample offset is 3400 o6 600 respectively
         cmd += hex(int('AF4A0000',16) | self.run.FWoutMode*(2**8)     | 18 ).split('x')[1] +"AE000100" # set outmode and win boundaries for trigger bits: x12 scans 1 win back and two forward
