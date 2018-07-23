@@ -138,6 +138,7 @@ void CHECK_FOR_FEATURE_EXTRACTION(const std::vector<unsigned int>& buffer_uint, 
 //----CHECK FOR SAMPLE -- INDICATED BY "BD" VALUE----//
 bool CHECK_FOR_SAMPLE(const std::vector<unsigned int>& buffer_uint, const int offset,const int count,const int chanNum, const int window,  MBevent& evt){
     // current usage is 31 bits
+    int FW_ADC_Offset = (chanNum==15) ? 2048 : 3400;
     if ((buffer_uint[offset+count] & 0xFF000000) == 0xBD000000) {
         const int sampNum     = ((buffer_uint[offset+count]>>12) & 0x0000001F)+window*32; // word #3 & up: read 5 bits
         int BDval   =  (buffer_uint[offset+count]>>24) & 0x000000FF; // word #3 & up: read 8 bits (top 8 bits)
@@ -152,8 +153,8 @@ bool CHECK_FOR_SAMPLE(const std::vector<unsigned int>& buffer_uint, const int of
 
             return true;
         }
-        else {
-            evt.ADC_counts[chanNum][sampNum] = ((buffer_uint[offset+count]) & 0x00000FFF); // word #3 & up: read 12 bits (bottom 12 bits)
+        else { // Note: Sign of waveform fliped here.
+             evt.ADC_counts[chanNum][sampNum] = FW_ADC_Offset - ((buffer_uint[offset+count]) & 0x00000FFF); // word #3 & up: read 12 bits (bottom 12 bits)
         }
     }
     return false;
