@@ -15,34 +15,18 @@ const int MEMORY_DEPTH  = 512;
 const int NASICS        = 10;
 const int NCHS          = 16;
 bool DecodeTPGflag;
-
+bool SoftwarePedSub;
+bool FirmwarePedSub;
 using namespace std;
 
-//class MBevent {
+//class evtPeds {
 //    public:
-//    int    EvtNum;
-//    int    AddNum;
-//    int    WrAddNum;
-//    int    Wctime; // ???
-//    int    ASIC;
 //    int    Sample[16][128];
-//    int    PeakVal[16];
-//    int    PeakTime[16];
-//    // note: Window information is only allocated 3 bits, so
-//    //       window number is fully specified by sample number
 //
-//    MBevent() {
-//        EvtNum                                     = -1;
-//        AddNum                                     = -1;
-//        WrAddNum                                   = -1;
-//        Wctime                                     = -1;
-//        ASIC                                       = -1;
-//        for (int i=0; i<16; i++) PeakVal [i]       = 9999;
-//        for (int i=0; i<16; i++) PeakTime [i]      = -1;
+//    evtPeds() {
 //        for (int i=0; i<16; i++) {
 //            for (int j=0; j<128; j++) Sample[i][j] = 9999;
 //        }
-//
 //    }
 
 
@@ -69,8 +53,8 @@ using namespace std;
 int  FIND_BUFFER_POSITION_FOR_START_OF_PACKAGE(const  unsigned char* buff,  int pos1,long size){
     while (
         (pos1 < (size-16))
-          && (!((buff[pos1]=='w' && buff[pos1+1]=='a' && buff[pos1+2]=='v' && buff[pos1+3]=='e')) // for OutMode==0 //ex. wave-->-------\    |pos1    --------         pos2\       (all utf 8-bit)
-          &&  !((buff[pos1]=='c' && buff[pos1+1]=='h' && buff[pos1+2]=='r' && buff[pos1+3]=='g'))) // for OutMode==1//sdf0k\Uffffffffdf\Uffffffffet\Uffffffffk\Uffffffffwq\Uffffffff\Uffffffffjwave\Uffffffff\Uffffffff\Uffffffff\Uffffffffu\Uffffffff57\Uffffffff\Ufffffffffm\Uffffffff/\Uffffffff08\Uffffffff\Uffffffff\Uffffffff\Uffffffffhrg=\Uffffffff3\Uffffffff\Uffffffff\Uffffffff1\Uffffffff\Uffffffffhn\Uffffffffhk\Uffffffff
+          && (!((buff[pos1]=='w' && buff[pos1+1]=='a' && buff[pos1+2]=='v' && buff[pos1+3]=='e'))
+          &&  !((buff[pos1]=='c' && buff[pos1+1]=='h' && buff[pos1+2]=='r' && buff[pos1+3]=='g')))
             ) {
             pos1++;
     }
@@ -136,7 +120,7 @@ void CHECK_FOR_FEATURE_EXTRACTION(const std::vector<unsigned int>& buffer_uint, 
 }
 
 //----CHECK FOR SAMPLE -- INDICATED BY "BD" VALUE----//
-bool CHECK_FOR_SAMPLE(const std::vector<unsigned int>& buffer_uint, const int offset,const int count,const int chanNum, const int window,  MBevent& evt){
+bool CHECK_FOR_SAMPLE(const std::vector<unsigned int>& buffer_uint, const int offset,const int count,const int chanNum, const int window,  MBevent& evt, int peds[][512][32]){
     // current usage is 31 bits
     int FW_ADC_Offset = (chanNum==15) ? 2048 : 3400;
     if ((buffer_uint[offset+count] & 0xFF000000) == 0xBD000000) {
@@ -154,7 +138,15 @@ bool CHECK_FOR_SAMPLE(const std::vector<unsigned int>& buffer_uint, const int of
             return true;
         }
         else { // Note: Sign of waveform fliped here.
-             evt.ADC_counts[chanNum][sampNum] = FW_ADC_Offset - ((buffer_uint[offset+count]) & 0x00000FFF); // word #3 & up: read 12 bits (bottom 12 bits)
+            if (SoftwarePedSub) {
+                evt.ADC_counts[chanNum][sampNum] = peds[chanNum][(evt.AddNum+window)%MEMORY_DEPTH][sampNum%32]-((buffer_uint[offset+count]) & 0x00000FFF); // word #3 & up: read 12 bits (bottom 12 bits)
+            }
+            else if (FirmwarePedSub) {
+                evt.ADC_counts[chanNum][sampNum] = FW_ADC_Offset - ((buffer_uint[offset+count]) & 0x00000FFF); // word #3 & up: read 12 bits (bottom 12 bits)
+            }
+            else {
+                evt.ADC_counts[chanNum][sampNum] = ((buffer_uint[offset+count]) & 0x00000FFF); // word #3 & up: read 12 bits (bottom 12 bits)
+            }
         }
     }
     return false;
@@ -204,9 +196,22 @@ void extract_package_header(const std::vector<unsigned int>& buffer_uint, MBeven
     evt.Wctime     =   (buffer_uint[2])      & 0x0FFFFFFF ;   // word #2: read 28 bits
 }
 
+//void get_pedestals_from_file(MBevent& evt, TTree* tree){
+//    int pedSample[16][512][32];
+//    tree->SetBranchAddress("Sample", pedSample);
+//    tree->GetEntry(evt.ASIC);
+//    for (int i=0; i<16; i++) {
+//      for (int j=0; j<4; j++) {
+//        for (size_t k = 0; k < 32; k++) {
+//          Sample[i][j*32+k] = pedSample[i][evt.AddNum+j][k];
+//        }
+//      }
+//    }
+//}
+
 
 //----LOOP OVER CURRENT PACKAGE AND EXTRACT DATA----//
-void extract_package_body(const std::vector<unsigned int>&  buffer_uint,  MBevent& evt,std::ostream& out){
+void extract_package_body(const std::vector<unsigned int>&  buffer_uint,  MBevent& evt, std::ostream& out, int peds[16][512][32]){
     const size_t offset     = 3;
     for(size_t count = 0 ; count < buffer_uint.size() ; ++count){
         int chanNum    = (buffer_uint[offset+count]>>19) & 0x0000000F; // word #3 & up: read 4 bits
@@ -214,7 +219,7 @@ void extract_package_body(const std::vector<unsigned int>&  buffer_uint,  MBeven
 
         //----CHECK FOR SAMPLE -- INDICATED BY "BD" VALUE----//
         // current usage is 31 bits
-        if(CHECK_FOR_SAMPLE(buffer_uint,offset,count,chanNum,window,evt)){
+        if(CHECK_FOR_SAMPLE(buffer_uint,offset,count,chanNum,window,evt,peds)){
             continue;
         }
         CHECK_FOR_FEATURE_EXTRACTION(buffer_uint,offset,count,evt);
@@ -225,7 +230,7 @@ void extract_package_body(const std::vector<unsigned int>&  buffer_uint,  MBeven
 //-----------------------------------------------------//
 //                   PROCESS BUFFER
 //-----------------------------------------------------//
-void processBuffer(const unsigned char* buff,const long size, const char* root_output,const char* trigBitOutfile,const int OutMode) {
+void processBuffer(const unsigned char* buff,const long size, const char* root_output, const char* ped_file, const char* trigBitOutfile) {
 
     if (size<100) {
         cout << "\n\nWARNING: Packet size only: " << size << " bytes. ---> Skipping packet.\n\n";
@@ -233,17 +238,25 @@ void processBuffer(const unsigned char* buff,const long size, const char* root_o
     }
 
 
-
+    int pedSample[NCHS][MEMORY_DEPTH][32];
+    TFile* _file1;
+    TTree* _tree1;
+    if (SoftwarePedSub) {
+      _file1 = new TFile(ped_file,"READ");
+      _tree1 = (TTree*)_file1->Get("pedTree");
+      _tree1->SetBranchAddress("ADC_counts", pedSample);
+    }
 
 	  TFile *_file0 = new TFile(root_output,"RECREATE");
     int eventCounter = 1; // for printing progress to terminal
     {
     MBevent evt("tree");
+    //evtPeds peds();
 
+    int lastASIC = -1;
     ofstream CAoutfile(trigBitOutfile, ofstream::out | ofstream::app);
      //---- EXTRACT PACKAGES FROM BUFFER ----//
     std::vector<unsigned int> buffer_uint(65536);
-
     interval_t packet_interval(0,0);
     while (packet_interval.first < (size-16)) {
         packet_interval = Find_package_in_buffer(buff,packet_interval,size);
@@ -259,7 +272,13 @@ void processBuffer(const unsigned char* buff,const long size, const char* root_o
         PRINT_PSEUDO_STATUS_BAR_TO_TERMINAL(eventCounter++);
 
         extract_package_header(buffer_uint,evt);
-        extract_package_body(buffer_uint,evt,CAoutfile);
+
+        if (SoftwarePedSub && lastASIC != evt.ASIC) {
+            _tree1->GetEntry(evt.ASIC);
+            lastASIC = evt.ASIC; // avoid redundant calls to TTree::GetEntry()
+        }
+
+        extract_package_body(buffer_uint,evt,CAoutfile,pedSample);
 
 
         //----WRITE PARSED PACKAGE TO FILE (ONE LINE PER EVENT)----//
@@ -305,26 +324,49 @@ std::vector<char> read_file_to_buffer(const char* inFileName){
 //--------------------------------------------------------//
 int main(int argc, char* argv[]) {
 
+    char usageMSG[300] = "wrong number of arguments:\nUsage ./tx_ethparse1 <input filename> <root_output> <trigBitoutfile> [<pedType>: -SWpeds <pedfile>, -FWpeds]\n";
     //------------ USAGE ------------//
-    if (argc != 5 && argc != 6 ) {
-        cout << "wrong number of arguments:\n";
-        cout << "Usage ./tx_ethparse1 <input filename> <root_output> <trigBitoutfile> <OutMode> [options: -TPG]\n";
-        return 0; //          0            1                   2                 3            4
-    }
+    if (argc<5 | argc>7 ) {cout << usageMSG << endl; return 0;}
 
     DecodeTPGflag = false;
-    if (argc == 6) {
-        if (0 == strcmp(argv[5], "-TPG")) DecodeTPGflag = true;
+    SoftwarePedSub = false;
+    FirmwarePedSub = false;
+    if (argc == 5) {
+        if (0 == strcmp(argv[4], "-FWpeds")) {
+            FirmwarePedSub = true;
+            cout << "Assuming firmware pedestal subtraction" << endl;
+        }
+        else if (0 == strcmp(argv[4], "-NoPedSub")) {
+            cout << "No ped subtraction" << endl;
+        }
         else {
-            cout << "Usage: ./tx_ethparse1 <input filename> <root_output> <trigBitoutfile> <OutMode> [options: -TPG]\n";
+            cout << usageMSG << endl;
             return 0;
         }
+    }
+    else if (argc == 6) {
+        if (0 == strcmp(argv[4], "-SWpeds")) {
+            SoftwarePedSub  = true;
+            cout << "Software pedestal subtraction" << endl;
+        }
+        else {
+            cout << usageMSG << endl;
+            return 0;
+        }
+    }
+    else {
+        cout << usageMSG << endl;
+        return 0;
     }
 
     char* inputFileName   = argv[1]; // outdir/data.dat
     char* root_output     = argv[2]; // outdir/KLMS . . . /
     char* trigBitOutfile  = argv[3];
-    int   OutMode         = atoi(argv[4]);
+    char* ped_file;
+    if (SoftwarePedSub) {
+        ped_file = argv[5];
+        cout << "ped file = " << ped_file << endl;
+    }
 
     std::vector<char> buffer = read_file_to_buffer(inputFileName);
 
@@ -332,7 +374,7 @@ int main(int argc, char* argv[]) {
         return -1; // reurn an error code to the command line
     }
     unsigned char* Ubuff = (unsigned char*)buffer.data(); // point to ascii buffer and cast it as unsigned buffer
-    processBuffer(Ubuff, buffer.size(), root_output, trigBitOutfile, OutMode);
+    processBuffer(Ubuff, buffer.size(), root_output, ped_file, trigBitOutfile);
 
 
     return 0;
