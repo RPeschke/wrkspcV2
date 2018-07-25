@@ -135,7 +135,7 @@ class ImportRunControlFunctions:
                 tProg = time.time()
             rcv = ctrl.receive(20000)# rcv is string of Hex
             time.sleep(0.001)
-            self.printPseudoStatusBar(self.NumEvts,evtNum)
+            self.printStatusBar(evtNum)
             rcv = linkEth.hexToBin(rcv)
             f.write(rcv) # write received binary data into file
         self.EvtRate = float(evtNum)/(time.time()-t0-tExtra)
@@ -156,35 +156,34 @@ class ImportRunControlFunctions:
                 cmd.KLMprint(self.RunConfig,"Software_triggered_run_config_cmd")
                 time.sleep(0.01)
                 t0 = time.time()
-                NumEvts = 128*self.NumSoftwareEvtsPerWin
-                Print("Taking %s events for ASIC %d . . ." % (NumEvts, ASIC), SOFT)
-                for evtNum in range(1,128*self.NumSoftwareEvtsPerWin+1):
+                self.NumEvts = 128*self.NumSoftwareEvtsPerWin
+                Print("Taking %s events for ASIC %d . . ." % (self.NumEvts, ASIC), SOFT)
+                for evtNum in range(1,self.NumEvts+1):
                     ctrl.send(cmd.Set_Readout_Window(((evtNum-1)*4)%512))
                     time.sleep(0.005)
                     ctrl.send(cmd.forceTrig)
                     rcv = ctrl.receive(20000)# rcv is string of Hex
                     time.sleep(0.005)
-                    self.printPseudoStatusBar(NumEvts,evtNum)
+                    self.printStatusBar(evtNum)
                     rcv = linkEth.hexToBin(rcv)
                     f.write(rcv) # write received binary data into file
                 self.EvtRate = float(evtNum)/(time.time()-t0)
                 Print("\nOverall hit rate was %s%.2f Hz" % (OKGREEN,self.EvtRate), SOFT)
 
-    def printPseudoStatusBar(self,NumEvts,evtNum):
-        if (NumEvts/400.<1.):
-            multiplier = 1
-        elif (NumEvts/4000.<1.):
-            multiplier = 10
-        elif (NumEvts/40000.<1.):
-            multiplier = 100
-        else:
-            multiplier = 1000
-        if (evtNum%multiplier==0):
-            sys.stdout.write('.')
-            sys.stdout.flush()
-        if ( (evtNum%(80*multiplier)==0) or evtNum==(NumEvts) ):
-            sys.stdout.write("<--%d\n" % evtNum)
-            sys.stdout.flush()
+    def printStatusBar(self,evtNum):
+        '''
+        [---------------------------------------------------------------->] 100%
+                                                                             '''
+        status = evtNum/float(self.NumEvts)
+        statusBar = BCYAN + "["
+        for i  in range(int(72*status)):
+            statusBar += "-"
+        statusBar += ">"
+        for i  in range(int(72*status),72):
+            statusBar += " "
+        statusBar += "] " + str(int(100*status)) + "%\033[m"
+        sys.stdout.write('\r' + statusBar,)
+        sys.stdout.flush()
 
     def pauseForReprogram(self,hs,ctrl,cmd):
         Print("Pausing data collection\nRaising HV trim DACs", SOFT)
@@ -219,7 +218,7 @@ class ImportRunControlFunctions:
         if (self.ParserPedSubType == "-SWpeds"):
             self.ParserPedSubType += (" %s" % self.pedfile)
         Print("Parsing data . . .", SOFT)
-        os.system("./bin/tx_ethparse1_ck temp/data.dat %s temp/triggerBits.txt %s" % (root_file,self.ParserPedSubType))
+        os.system("./bin/tx_ethparse1_ck temp/data.dat %s temp/triggerBits.txt %d %s" % (root_file,self.NumEvts,self.ParserPedSubType))
         os.system("echo -n > temp/data.dat") #clean binary file again to save disk space!
         Print("Data Parsed\nWaveform data saved in %s%s" % (OKBLUE,root_file), SOFT)
 
