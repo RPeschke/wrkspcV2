@@ -1,6 +1,7 @@
 #include "Riostream.h"
+#include "TMath.h"
 
-void ExtractFeatures(const char* root_input, const char* root_output) {
+void ProcessWaveformData(const char* root_input, const char* root_output) {
 
   // TTree Variables
   Int_t   EvtNum, AddNum,  WrAddNum, Wctime, ASIC, tFW, qFW, Sample[16][128]; // raw data variables
@@ -23,7 +24,7 @@ void ExtractFeatures(const char* root_input, const char* root_output) {
   int tLowerThrTail=0, tHigherThrTail=0, proxLowerThrBestTail=999, proxHigherThrBestTail=999;
 
   TFile* InFile = new TFile(root_input, "READ");
-  TTree* InTree = (TTree*)file->Get("tree");
+  TTree* InTree = (TTree*)InFile->Get("tree");
 
   InTree->SetBranchAddress("EvtNum", &EvtNum);
   InTree->SetBranchAddress("AddNum", &AddNum);
@@ -52,7 +53,7 @@ void ExtractFeatures(const char* root_input, const char* root_output) {
   for (int e=0; e<numEnt; e++) {
     InFile->cd();
     InTree->GetEntry(e);
-    for (int i=0; i<16; i++) {   
+    for (int i=0; i<16; i++) {
       tempPeak  = 0; tHigherThr = 0; tLowerThr = 0; j_rev = 999; waitForTailScan=128; // housekeeping
       FeatureExtractionActivated[i] = false; AfterPulseFlag[i] = false; // TTree variables!
       // --- SAMPLE LOOP AND FEATURE EXTRACTION --- //
