@@ -7,6 +7,7 @@
 #include <vector>
 #include "KLM_lib/MBevent.hpp"
 
+bool DEBUG = false;
 
 typedef std::pair<int,int> interval_t;
 
@@ -19,33 +20,6 @@ bool SoftwarePedSub;
 bool FirmwarePedSub;
 using namespace std;
 
-//class evtPeds {
-//    public:
-//    int    Sample[16][128];
-//
-//    evtPeds() {
-//        for (int i=0; i<16; i++) {
-//            for (int j=0; j<128; j++) Sample[i][j] = 9999;
-//        }
-//    }
-
-
-//friend std::ostream& operator<<(std::ostream& out, const MBevent& evt){
-//        out <<      evt.EvtNum      << " ";
-//        out <<      evt.AddNum      << " ";
-//        out <<      evt.WrAddNum    << " ";
-//        out <<      evt.Wctime      << " ";
-//        out <<      evt.ASIC        << " ";
-//        for (int i=0; i<16; i++) {
-//            out <<  evt.PeakTime[i] << " ";
-//            out <<  evt.PeakVal[i]  << " ";
-//            for (int j=0; j<128; j++) out << evt.Sample[i][j] << " ";
-//        }
-//        out << "\n";
-//
-//        return out;
-//    }
-//};
 
 
  //----FIND BUFFER POSITION FOR START OF PACKAGE----//
@@ -58,7 +32,6 @@ int  FIND_BUFFER_POSITION_FOR_START_OF_PACKAGE(const  unsigned char* buff,  int 
             ) {
             pos1++;
     }
-
     return pos1;
 }
 
@@ -91,22 +64,30 @@ interval_t CONVERT_DATA_FROM_8_BIT_BUFFER_TO_32_BIT_BUFFER(const unsigned char* 
             buffer_uint.push_back(
                 ((unsigned int)buff[pos1+0])<<24 | ((unsigned int)buff[pos1+1])<<16 | ((unsigned int)buff[pos1+2])<<8 | ((unsigned int)buff[pos1+3])
             );
-
         }
         posRead++;
         pos1++; // When at end of while-loop, pos1 should be either at the word FACEFACE or at start of next package?
     }
-
-
     return interval_t(pos1,interval_v.second);
 }
 
-void PRINT_PSEUDO_STATUS_BAR_TO_TERMINAL(int eventCounter){
+void PRINT_STATUS_BAR_TO_TERMINAL(int eventCounter, int NumEvts){
 
-            //----PRINT PSEUDO STATUS BAR TO TERMINAL----//
-            //if (eventCounter == 1) cout << "Passing package of " << wbuflen <<" 32-bit words to waveform buffer\n";
-            if (eventCounter%1 == 0) cout << "." << flush;
-            if (eventCounter%80 == 0) cout << "<---" << eventCounter << "\n";
+            string statusBar = "\033[1;96m[";
+            float status = eventCounter/(float)NumEvts;
+            int   per100 = (int)100*status;
+            int   cursor = 0;
+            while (cursor < static_cast<int>(72*status)) {
+              statusBar.append("-");
+              cursor++;
+            }
+            statusBar.append(">");
+            while (cursor < 72) {
+              statusBar.append(" ");
+              cursor++;
+            }
+            statusBar.append("] " );
+            cout << '\r' << statusBar << per100 << "%\033[m" << flush;
 }
 
 
@@ -128,13 +109,12 @@ bool CHECK_FOR_SAMPLE(const std::vector<unsigned int>& buffer_uint, const int of
         int BDval   =  (buffer_uint[offset+count]>>24) & 0x000000FF; // word #3 & up: read 8 bits (top 8 bits)
         // make sure info is still valid before extracting samples---must pass these four conditions
         if (evt.AddNum >= MEMORY_DEPTH  || evt.ASIC > NASICS || sampNum >= NSAMP || BDval != 0xBD) {
-            cout << "INVALID SAMPLE INFO, SKIPPING "    << "\n"
+            cout << "\033[1;91mINVALID SAMPLE INFO, SKIPPING "    << "\n"
                  << "Loop counter: "    << count        << "\n"
                  << "Address number: "  << evt.AddNum  << "\n"
                  << "ASIC number: "     << evt.ASIC    << "\n"
                  << "Sample number: "   << sampNum      << "\n"
-                 << "BD value: "        << BDval        << "\n";
-
+                 << "BD value: "        << BDval        << "\n\033[0m";
             return true;
         }
         else { // Note: Sign of waveform fliped here.
@@ -188,27 +168,13 @@ void CHECK_FOR_TRIGGER_BITS(const std::vector<unsigned int>& buffer_uint,const i
  }
 
 void extract_package_header(const std::vector<unsigned int>& buffer_uint, MBevent& evt){
-        //----FOR EACH 32-bit WORD, EXTRACT DATA USING BIT-WISE & OPERATORS----//
+    //----FOR EACH 32-bit WORD, EXTRACT DATA USING BIT-WISE & OPERATORS----//
     evt.AddNum     =   (buffer_uint[0])      & 0x000001FF ;   // word #0: read 5 bits
     evt.WrAddNum   =   (buffer_uint[0]>>9)   & 0x000001FF ;   // word #0: read 5 bits
     evt.ASIC       =  ((buffer_uint[0]>>20)  & 0x0000000F)-1; // word #0: read 4 bits
     evt.EvtNum     =   (buffer_uint[1])      & 0x00FFFFFF ;   // word #1: read 24 bits
     evt.Wctime     =   (buffer_uint[2])      & 0x0FFFFFFF ;   // word #2: read 28 bits
 }
-
-//void get_pedestals_from_file(MBevent& evt, TTree* tree){
-//    int pedSample[16][512][32];
-//    tree->SetBranchAddress("Sample", pedSample);
-//    tree->GetEntry(evt.ASIC);
-//    for (int i=0; i<16; i++) {
-//      for (int j=0; j<4; j++) {
-//        for (size_t k = 0; k < 32; k++) {
-//          Sample[i][j*32+k] = pedSample[i][evt.AddNum+j][k];
-//        }
-//      }
-//    }
-//}
-
 
 //----LOOP OVER CURRENT PACKAGE AND EXTRACT DATA----//
 void extract_package_body(const std::vector<unsigned int>&  buffer_uint,  MBevent& evt, std::ostream& out, int peds[16][512][32]){
@@ -224,16 +190,15 @@ void extract_package_body(const std::vector<unsigned int>&  buffer_uint,  MBeven
         }
         CHECK_FOR_FEATURE_EXTRACTION(buffer_uint,offset,count,evt);
         CHECK_FOR_TRIGGER_BITS(buffer_uint,offset,count,out);
-
-    }//END OF EXTRACT DATA FROM CURRENT PACKAGE
+    }
 }
 //-----------------------------------------------------//
 //                   PROCESS BUFFER
 //-----------------------------------------------------//
-void processBuffer(const unsigned char* buff,const long size, const char* root_output, const char* ped_file, const char* trigBitOutfile) {
+void processBuffer(const unsigned char* buff,const long size, const char* root_output, const char* ped_file, const char* trigBitOutfile, int NumEvts) {
 
     if (size<100) {
-        cout << "\n\nWARNING: Packet size only: " << size << " bytes. ---> Skipping packet.\n\n";
+        cout << "\033[1;91m\n\nWARNING: Packet size only: " << size << " bytes. ---> Skipping packet.\n\n\033[m";
         return;
     }
 
@@ -248,19 +213,19 @@ void processBuffer(const unsigned char* buff,const long size, const char* root_o
     }
 
 	  TFile *_file0 = new TFile(root_output,"RECREATE");
-    int eventCounter = 1; // for printing progress to terminal
+    int eventCounter = 0; // for printing progress to terminal
     {
     MBevent evt("tree");
     //evtPeds peds();
 
-    int lastASIC = -1;
+    int prevASIC = -1;
     ofstream CAoutfile(trigBitOutfile, ofstream::out | ofstream::app);
+
      //---- EXTRACT PACKAGES FROM BUFFER ----//
     std::vector<unsigned int> buffer_uint(65536);
     interval_t packet_interval(0,0);
     while (packet_interval.first < (size-16)) {
         packet_interval = Find_package_in_buffer(buff,packet_interval,size);
-
 
         if (!is_valid_package(buff,packet_interval)) { // We dont have a package.
            continue;
@@ -268,18 +233,21 @@ void processBuffer(const unsigned char* buff,const long size, const char* root_o
 
         packet_interval = CONVERT_DATA_FROM_8_BIT_BUFFER_TO_32_BIT_BUFFER( buff,packet_interval,buffer_uint);
 
+        eventCounter++;
 
-        PRINT_PSEUDO_STATUS_BAR_TO_TERMINAL(eventCounter++);
+        if (NumEvts <= 72) PRINT_STATUS_BAR_TO_TERMINAL(eventCounter,NumEvts);
+        else if (eventCounter%(int)(NumEvts/72.0)==0) {
+            PRINT_STATUS_BAR_TO_TERMINAL(eventCounter,NumEvts);
+        }
 
         extract_package_header(buffer_uint,evt);
 
-        if (SoftwarePedSub && lastASIC != evt.ASIC) {
+        if (SoftwarePedSub && evt.ASIC != prevASIC) {
             _tree1->GetEntry(evt.ASIC);
-            lastASIC = evt.ASIC; // avoid redundant calls to TTree::GetEntry()
+            prevASIC = evt.ASIC; // avoid redundant calls to TTree::GetEntry()
         }
 
         extract_package_body(buffer_uint,evt,CAoutfile,pedSample);
-
 
         //----WRITE PARSED PACKAGE TO FILE (ONE LINE PER EVENT)----//
         evt.Fill();
@@ -288,8 +256,8 @@ void processBuffer(const unsigned char* buff,const long size, const char* root_o
     }//END OF ALL PACKAGES
     }
     _file0->Close();
-    cout << "<---" << eventCounter-1 << "\n";
-
+    cout << "\n";
+    if (DEBUG) cout << "\nData Parsed\n";
 
 }//END PROCESS BUFFER
 
@@ -300,7 +268,6 @@ long   GET_LENGTH_OF_FILE(std::ifstream& infile){
     return size_in_bytes;
 }
 
-
 std::vector<char> read_file_to_buffer(const char* inFileName){
     //---- DEFINE INPUT FILE AND PARSING ----//
     ifstream infile(inFileName, ifstream::in | ifstream::binary); // data in form of ascii (8-bit) characters  // Open file for reading in binary.
@@ -309,14 +276,14 @@ std::vector<char> read_file_to_buffer(const char* inFileName){
         return std::vector<char>();
     }
 
-
      //---- READ DATA TO BUFFER ----//
     std::vector<char> buffer(GET_LENGTH_OF_FILE(infile)); // Declare memory
 
-    cout << "Reading " << buffer.size() << " bytes... ";
+    //cout << "Reading " << buffer.size() << " bytes... ";
     infile.read (buffer.data(), buffer.size());
-    if (infile) cout << "all characters read successfully.\n";
-    else cout << "\n\nerror: only " << infile.gcount() << " could be read\n\n";
+    //if (infile) cout << "all characters read successfully.\n";
+    //else cout << "\n\nerror: only " << infile.gcount() << " could be read\n\n";
+    if (!infile) cout << "\033[1;91m\n\nerror: only " << infile.gcount() << " could be read\n\n\033[m";
     return buffer;
 }
 //--------------------------------------------------------//
@@ -326,28 +293,28 @@ int main(int argc, char* argv[]) {
 
     char usageMSG[300] = "wrong number of arguments:\nUsage ./tx_ethparse1 <input filename> <root_output> <trigBitoutfile> [<pedType>: -SWpeds <pedfile>, -FWpeds]\n";
     //------------ USAGE ------------//
-    if (argc<5 | argc>7 ) {cout << usageMSG << endl; return 0;}
+    if (argc<6 | argc>8 ) {cout << usageMSG << endl; return 0;}
 
     DecodeTPGflag = false;
     SoftwarePedSub = false;
     FirmwarePedSub = false;
-    if (argc == 5) {
-        if (0 == strcmp(argv[4], "-FWpeds")) {
+    if (argc == 6) {
+        if (0 == strcmp(argv[5], "-FWpeds")) {
             FirmwarePedSub = true;
-            cout << "Assuming firmware pedestal subtraction" << endl;
+            if (DEBUG) cout << "Assuming firmware pedestal subtraction" << endl;
         }
-        else if (0 == strcmp(argv[4], "-NoPedSub")) {
-            cout << "No ped subtraction" << endl;
+        else if (0 == strcmp(argv[5], "-NoPedSub")) {
+            if (DEBUG) cout << "No ped subtraction" << endl;
         }
         else {
             cout << usageMSG << endl;
             return 0;
         }
     }
-    else if (argc == 6) {
-        if (0 == strcmp(argv[4], "-SWpeds")) {
+    else if (argc == 7) {
+        if (0 == strcmp(argv[5], "-SWpeds")) {
             SoftwarePedSub  = true;
-            cout << "Software pedestal subtraction" << endl;
+            if (DEBUG) cout << "Software pedestal subtraction" << endl;
         }
         else {
             cout << usageMSG << endl;
@@ -362,10 +329,11 @@ int main(int argc, char* argv[]) {
     char* inputFileName   = argv[1]; // outdir/data.dat
     char* root_output     = argv[2]; // outdir/KLMS . . . /
     char* trigBitOutfile  = argv[3];
+    int   NumEvts         = atoi(argv[4]);
     char* ped_file;
     if (SoftwarePedSub) {
-        ped_file = argv[5];
-        cout << "ped file = " << ped_file << endl;
+        ped_file = argv[6];
+        if (DEBUG) cout << "ped file = " << ped_file << endl;
     }
 
     std::vector<char> buffer = read_file_to_buffer(inputFileName);
@@ -374,7 +342,7 @@ int main(int argc, char* argv[]) {
         return -1; // reurn an error code to the command line
     }
     unsigned char* Ubuff = (unsigned char*)buffer.data(); // point to ascii buffer and cast it as unsigned buffer
-    processBuffer(Ubuff, buffer.size(), root_output, ped_file, trigBitOutfile);
+    processBuffer(Ubuff, buffer.size(), root_output, ped_file, trigBitOutfile, NumEvts);
 
 
     return 0;
