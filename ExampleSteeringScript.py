@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import sys, os, time
 sys.path.append( os.getcwd()+'/lib/' )
-import linkEth, cmd_lib, FileHandshake, run_lib
+import cmd_lib, FileHandshake, run_lib, anal_lib
+sys.path.append('/home/testbench2/root_6_08/lib')
 ################################################################################
 ##                      KLM Hawaii Steering Script
 ##
@@ -19,36 +20,24 @@ import linkEth, cmd_lib, FileHandshake, run_lib
 run = run_lib.ImportRunControlFunctions(sys)
 
 ### ----CONTROL PARAMETERS---- ###
-run.NumEvts       = 10
+run.NumEvts       = 100
 run.ASICmask      = "0000000001"  # e.g. 0000000111 for enabling ASICs 0, 1, and 2
 run.HVmask        = "0100000000000001" #16-ch mask: 0= 255 trim DAC counts, 1= HV DAC from file
 run.TrigMask      = "0000000000000001" #16-ch mask: 0= 4095 trig DAC counts, 1= trig DAC from file
 run.HVDAC_offset  = [ -25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -25]
-run.ThDAC_offset  = [-425, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0]
-run.FWpedSubType = 1 ##  1 for FW pedSub  ##  2 for peds only  ##  3 for raw data  ##
-run.ParserPedSubType = "-FWpeds"  ##  "-FWpeds"  ##  "-SWpeds"  ##  "-NoPedSub"  ##
-### Uncomment block to TAKE CALIBRATION DATA
-#for ASIC in range(10):
-# if ((2**ASIC & int(run.ASICmask,2)) > 0):
-#     os.system("./py/ThresholdScan/SingleASIC_Starting_Values.py %s %s %d %s" % (run.SN,run.strHV,ASIC,run.HVmask))
-#     time.sleep(0.1)
+run.ThDAC_offset  = [-225, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0]
 
-# Construct command and linkEth classes for building and sending hex packets to FPGA
-cmd = cmd_lib.CMD(run)
-ctrl = linkEth.UDP('192.168.20.5', '24576', '192.168.20.1', '28672', "eth4") # (addr_fpga, port_fpga, addr_pc, port_pc, interface):
 
-### Uncomment block to MEASURE PEDESTAL DISTRIBUTION
-#run.NumSoftwareEvtsPerWin   = 1
-#f = run.OpenEthLinkAndDataFile(ctrl)
-#run.SoftwareTriggeredDataCollectionLoop(ctrl,cmd,f)
-#run.TurnOffTrigsAndHV_ClosePortsAndFiles(ctrl,cmd,f)
-#run.ConvertDataToRootFile("temp/pedsTemp.root")
-#run.CreatePedestalMasterFile()
+#run.MeasureTrigDAC_and_HV_DAC_BaseValues()
+
+#run.CreatePedestalMasterFile() # opt: (# of averages)
+
+#run.MeasurePedestalDistribution() # opt: (# of evts. per win.)
 #run.Plot_Peds_OneASIC()
 
-### Uncomment block to COLLECT DATA
-#f = run.OpenEthLinkAndDataFile(ctrl)
-#run.MainDataCollectionLoop(ctrl,cmd,f,0)
-#run.TurnOffTrigsAndHV_ClosePortsAndFiles(ctrl,cmd,f)
-#run.ConvertDataToRootFile()
-#run.SaveDataCollectionParameters(0)
+#run.CollectRandomWindowData()
+
+#run.CollectASICtriggeredData()
+
+root = anal_lib.NewAnalysis(run)
+root.ProcessWaveforms() # opt: (infile, outfile)
