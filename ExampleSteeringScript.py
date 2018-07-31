@@ -1,221 +1,43 @@
 #!/usr/bin/env python
-import sys
-import time
-from time import strftime
-import os
+import sys, os, time
 sys.path.append( os.getcwd()+'/lib/' )
-import linkEth
-import cmd_lib
-import FileHandshake
-hs = FileHandshake.FileHandshake()
+import cmd_lib, FileHandshake, run_lib, anal_lib
 sys.path.append('/home/testbench2/root_6_08/lib')
-import ROOT
-ROOT.gROOT.LoadMacro("root/TTreeMgmt/MakeMBeventTTree.cxx")
-ROOT.gROOT.LoadMacro("root/WaveformPlotting/PlotSomeWaveforms.cxx")
-ROOT.gROOT.LoadMacro("root/GainStudies/MultiGaussFit.cxx")
-ROOT.gSystem.Load('KLM_lib/lib/libKLM_lib.so')
-time.sleep(0.1)
-import numpy as np
-sys.path.append('/home/testbench2/gitDevWrkspc/KLM_lib/lib')
 ################################################################################
 ##                      KLM Hawaii Steering Script
 ##
-##      This script is meant to simplify data collection for the KLM scintillator
-##  testbench in Hawaii. Below are sections for 'Calibration and Pedestal
-##  management', 'Take Data', and 'Analyze Data.''
-##      The user can uncomment or add in the scripts they want to run, comment
-##  out the scripts they don't need, then run everything by launching their own
-##  version of this script.
+##      This script is meant to simplify data collection for the KLM
+##  scintillator testbench.
 ##      For longer data runs (>3.5hr), it will be necessary to first start
 ##  py/MicroProcesses/JTAG_reprogramming.py with sudo privileges in a second
 ##  shell, then launch this script from your original shell
 ##
 ##      Author: Chris Ketter
 ##      email:  cketter@hawaii.edu
-##      last modified: 20 July 2018
+##      last modified: 23 July 2018
 ##
 ################################################################################
-def pauseForReprogram(hs,ctrl,cmdHVoff,cmdHV,cmdTh,cmdRunConfig):
-    tProgStart = time.time()
-    ctrl.send(cmdHVoff)
-    time.sleep(0.1)
-    ctrl.close()
-    print "Pausing data collection"
-    hs.start_handshake()
-    print "Resuming data collection"
-    ctrl.open()
-    time.sleep(0.2)
-    ctrl.send(cmdHV)
-    time.sleep(0.2)
-    ctrl.send(cmdTh)
-    time.sleep(0.2)
-    ctrl.send(cmdRunConfig)
-    time.sleep(0.2)
-    return(time.time()-tProgStart)
+run = run_lib.ImportRunControlFunctions(sys)
+
+### ----CONTROL PARAMETERS---- ###
+run.NumEvts       = 100
+run.ASICmask      = "0000000001"  # e.g. 0000000111 for enabling ASICs 0, 1, and 2
+run.HVmask        = "0100000000000001" #16-ch mask: 0= 255 trim DAC counts, 1= HV DAC from file
+run.TrigMask      = "0000000000000001" #16-ch mask: 0= 4095 trig DAC counts, 1= trig DAC from file
+run.HVDAC_offset  = [ -25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -25]
+run.ThDAC_offset  = [-225, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0]
 
 
-#---------------- USAGE ----------------#
-#e.g./: ./MySteeringScript.py KLMS_0173 74p52
-usageMSG="Usage:\n"+\
-"./ExampleSteeringScript.py <S/N> <HV>\n"+\
-"Where:\n"+\
-    "<S/N>          = KLMS_0XXX\n"+\
-    "<HV>           = (e.g.) 74p52\n"
+#run.MeasureTrigDAC_and_HV_DAC_BaseValues()
 
-if (len(sys.argv)!=3):
-    print usageMSG
-    exit(-1)
+#run.CreatePedestalMasterFile() # opt: (# of averages)
 
-SN          = str(sys.argv[1])
-UniqueID    = strftime("%Y%m%d", time.localtime())
-#UniqueID    = strftime("%Y%m%d_%H%M%S%Z", time.localtime())
-strRawHV    = str(sys.argv[2])
-floatHV     = float(strRawHV.replace("p","."))
-ASICmask    = "0000000001"  # e.g. 0000000111 for enabling ASICs 0, 1, and 2
-HVmask      = "0100000000000001" #16-channel mask: 0=HVoff, 1=HVnom
+#run.MeasurePedestalDistribution() # opt: (# of evts. per win.)
+#run.Plot_Peds_OneASIC()
 
-if not (os.path.isdir("data/"+SN)):
-    os.system("mkdir -p data/" + SN + "/plots")
+#run.CollectRandomWindowData()
 
+#run.CollectASICtriggeredData()
 
-#########################################
-## CALIBRATION AND PEDESTAL MANAGEMENT ##
-#########################################
-
-### Uncomment next 4 lines to TAKE CALIBRATION DATA
-#for ASIC in range(10):
-# if ((2**ASIC & int(ASICmask,2)) > 0):
-#     os.system("./py/ThresholdScan/SingleASIC_Starting_Values.py %s %s %d %s" % (SN,strRawHV,ASIC,HVmask))
-#     time.sleep(0.1)
-
-### Uncomment next line to MEASURE PEDESTAL DISTRIBUTION
-#os.system("./py/OfflinePedestals/measurePedDist.py %s %s %d -OneASIC" % (SN, ASICmask, 1))
-### Uncomment next line to SAVE PEDESTALS TO FILE
-#os.system("./py/OfflinePedestals/measurePedDist.py %s %s %d -SavePedestals" % (SN, ASICmask, 64))
-
-
-
-
-#########################################
-#####         Take Data             #####
-#########################################
-root_file       = "data/%s/%s_%s.root" % (SN,SN,UniqueID)
-ctrl = linkEth.UDP('192.168.20.5', '24576', '192.168.20.1', '28672', "eth4") # (addr_fpga, port_fpga, addr_pc, port_pc, interface):
-cmd = cmd_lib.CMD(SN, strRawHV, ASICmask)
-thBase = cmd.Get_ASIC_TH_from_file(0)
-HV_DAC = cmd.Get_ASIC_HV_from_file(0)
-
-#---- CONFIGURE TRIGGER THRESHOLDS ----#
-trigLevel = [thBase[0]-425,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095]
-cmdTh = cmd.Generate_ASIC_TH_cmd(0,trigLevel)
-cmdThOff = cmd.Generate_ASIC_TH_cmd(0, [4095 for i in range (15)])
-
-#---- CONFIGURE HV DAC VALUES ----#
-HV_DAC[0] -= 25
-HV_DAC[14] -= 25
-cmdHV = cmd.Generate_ASIC_HV_cmd(0,HV_DAC)
-cmdHVoff = cmd.Generate_ASIC_HV_cmd(0, [255 for i in range (15)])
-
-#---- TX CONFIGURATION FOR SELF-TRIGGERING ----#
-    # OpMode:  =1 for ped sub data  /  =2 for peds  /  =3 for raw data
-    # OutMode: =0 for waveforms  /  =1 for feature extracted data only
-    # LookBack: Window lookback parameter in range [0,511]
-cmdRunConfig = cmd.Generate_ASIC_triggered_run_config_cmd(3,0,3) #(OpMode, OutMode, LookBack)
-
-#---- SEND COMMANDS TO TX ASIC AND FPGA ----#
-ctrl.open()
-time.sleep(0.1)
-ctrl.send(cmdHV)
-time.sleep(0.2)
-ctrl.send(cmdTh)
-time.sleep(0.2)
-ctrl.send(cmdRunConfig)
-time.sleep(0.2)
-ctrl.close()
-time.sleep(0.2)
-
-#---- DATA COLLECTION ----#
-NumEvts = 10
-for trigOffset in range(699,700):
-    ctrl.open()
-    time.sleep(0.1)
-    root_file = "data/%s/%s_%s_TH%dtest.root" % (SN,SN,UniqueID,trigOffset)
-    trigLevel = [thBase[0]-trigOffset,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095,4095]
-    cmdTh = cmd.Generate_ASIC_TH_cmd(0,trigLevel)
-    ctrl.send(cmdTh)
-    print "Taking %s events at trigger offset of %d. . ." % (NumEvts,trigOffset)
-    #print "Taking data for %d seconds" % (tTotal)
-    os.system("echo -n > temp/data.dat") #clean file without removing (prevents ownership change to root in this script)
-    f = open('temp/data.dat','ab') #a=append, b=binary
-    time.sleep(0.1)
-    t0 = tProg = time.time() # for longer data runs, FPGA will reprogram roughly every 3.5 hours (due to 4hr limit)
-    #while (t2<tTotal):
-    #    evtNum+=1
-    tExtra = 0
-    evtNum = 0
-    for evtNum in range(0, NumEvts):
-        if (time.time()-tProg > 12600):
-            tExtra += pauseForReprogram(hs,ctrl,cmdHVoff,cmdHV,cmdTh,cmdRunConfig)
-            tProg = time.time()
-        rcv = ctrl.receive(20000)# rcv is string of Hex
-        time.sleep(0.001)
-        if (evtNum>0 and (evtNum%100)==0):
-            sys.stdout.write('.')
-            sys.stdout.flush()
-        if ((evtNum>0 and (evtNum%8000)==0) or evtNum==(NumEvts-1)):
-            sys.stdout.write("<--%d\n" % evtNum)
-            sys.stdout.flush()
-        rcv = linkEth.hexToBin(rcv)
-        f.write(rcv) # write received binary data into file
-        t2 = time.time()-t0
-    EvtRate = (1+evtNum)/float(t2-tExtra)
-    print "\nOverall hit rate was %.2f Hz" % EvtRate
-    #ctrl.send(cmd.turnOffASICtriggering)
-    time.sleep(0.1)
-    f.close()
-    #ctrl.send(cmdHVoff)  # No sense in leaving it cranked up anymore
-    time.sleep(0.2)
-    ctrl.close()
-    time.sleep(0.1)
-
-    #---- WRITE PARAMETERS TO ROOT FILE ----#
-    thDAC_Base = np.asarray(thBase)
-    thDAC      = np.asarray(trigLevel)
-    HV_DAC     = np.asarray(HV_DAC)
-    time.sleep(0.1)
-    #---- RUN DATA-PARSING EXECUTABLE ----#
-    print "\nParsing %s Data" % SN
-    #os.system("echo -n > temp/waveformSamples.txt") #clean file without removing (prevents ownership change to root in this script)
-    os.system("./bin/tx_ethparse1_ck temp/data.dat %s temp/triggerBits.txt 0" %(root_file))
-    #os.system("echo -n > temp/data.dat") #clean binary file again to save disk space!
-    time.sleep(0.1)
-    os.system("chmod g+w %s" % root_file)
-    print "\nData parsed."
-    ROOT.WriteParametersToRootFile(root_file, floatHV, thDAC_Base, thDAC, HV_DAC, EvtRate)
-    time.sleep(0.1)
-
-#---- WRITE DATA TO ROOT FILE ----#
-#print "writring in %s" % root_file
-#ROOT.MakeMBeventTTree("temp/waveformSamples.txt", root_file)
-time.sleep(0.1)
-#os.system("echo -n > temp/waveformSamples.txt") #clear ascii file
-#os.system("chown testbench2:testbench2 " + root_file + " && chmod g+w " + root_file)
-print ("Data collection finished.\n\n")
-
-#########################################
-###           Analyze Data            ###
-#########################################
-
-#####PlotSomeWaveforms(const char* root_file, const int argCH)
-#ROOT.PlotSomeWaveforms(root_file,SN)
-#time.sleep(0.1)
-
-#####PlotPhotoElectronPeaks(char* root_file, int ASIC, int CH, float HV)
-#ROOT.MultiGaussFit(root_file,SN, 0, 0, approxHV)
-
-#####PlotPhotoElectronPeaks_vs_HV(SN, root_dir, argASIC, argCH)
-#ROOT.PlotPhotoElectronPeaks_vs_HV(SN,    "ch0",       0,     0)
-
-
-#os.system("sudo chown -R testbench2:testbench2 data/*")
-print("END of instructions from KLM_HI_SteeringScript.py\n\n")
+root = anal_lib.NewAnalysis(run)
+root.ProcessWaveforms() # opt: (infile, outfile)

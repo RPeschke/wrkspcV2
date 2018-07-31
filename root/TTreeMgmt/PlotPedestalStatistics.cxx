@@ -69,7 +69,10 @@ void PlotPedestalStatisticsOneASIC(const char* root_file, const char* out_pdf) {
   TH2I* hPeds[16];
   for (int chNo = 0; chNo < 16; chNo++) {
     sprintf(plotTitle, "Ch %d, Ped. Compensated Baseline", chNo);
+//    hPeds[chNo] = new TH2I("", plotTitle, 400,2200,2600, 512,0,512);
     hPeds[chNo] = new TH2I("", plotTitle, 50,-25,25, 512,0,512);
+//    hPeds[chNo] = new TH2I("", plotTitle, 4000,-200,3800, 512,0,512);
+//    hPeds[chNo] = new TH2I("", plotTitle, 100,-50,50, 512,0,512);
     hPeds[chNo]->GetXaxis()->SetTitle("Wilk. ADC Counts");
     hPeds[chNo]->GetYaxis()->SetTitle("Window #");
   }
