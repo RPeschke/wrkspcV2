@@ -22,10 +22,11 @@ if [ "$#" = "1" ]
 then
   binMask=$1
 else
-  echo "ENTER ASIC mask:"
-  echo "e.g. >>>0100000001  to setup ASIC_0 and ASIC_8"
-  echo
-  read -p " >>>" binMask
+  binMask="0000000000"
+#  echo "ENTER ASIC mask:"
+#  echo "e.g. >>>0100000001  to setup ASIC_0 and ASIC_8"
+#  echo
+#  read -p " >>>" binMask
 fi
 ASICmask=$(bc<<<"obase=10;ibase=2;$binMask")
 #echo
