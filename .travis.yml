@@ -1,6 +1,17 @@
 sudo: false
 language: cpp
+compiler:
+  - gcc
+  - clang
 
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.8
+    packages:
+    - g++-7.3
+    - clang-6
 
 script:
   - cd ./KLM_lib/build
