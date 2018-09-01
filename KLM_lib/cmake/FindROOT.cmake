@@ -48,7 +48,7 @@ IF (WIN32)
     set(ROOT_INCLUDE_DIR ${ROOTSYS}/include)
     set(ROOT_LIBRARY_DIR ${ROOTSYS}/lib)
     SET(ROOT_BINARY_DIR ${ROOTSYS}/bin)
-    set(ROOT_LIBRARIES -LIBPATH:${ROOT_LIBRARY_DIR} libGpad.lib libHist.lib libGraf.lib libGraf3d.lib libTree.lib libRint.lib libPostscript.lib libMathCore.lib libRIO.lib libNet.lib libThread.lib libCore.lib libCint.lib libGui.lib libGuiBld.lib)
+    set(ROOT_LIBRARIES ${ROOT_LIBRARY_DIR}/*.lib )
     FIND_PROGRAM(ROOT_CINT_EXECUTABLE
       NAMES rootcint
       PATHS ${ROOT_BINARY_DIR}
@@ -334,7 +334,8 @@ set(Make_Dict_name "${TargetName}_dict_${c1}")
 
 set(dict_file  ${CMAKE_CURRENT_BINARY_DIR}/${Make_Dict_name}.cxx)
 file(WRITE ${dict_file} "" )
-set(dict_file_pcm  ${CMAKE_CURRENT_BINARY_DIR}/${Make_Dict_name}_rdict.pcm)
+set(dict_file_pcm_short ${Make_Dict_name}_rdict.pcm)
+set(dict_file_pcm  ${CMAKE_CURRENT_BINARY_DIR}/${dict_file_pcm_short})
 file(WRITE ${dict_file_pcm} "" )
 add_custom_target(${Make_Dict_name}
  ${ROOT_CINT_EXECUTABLE} -f ${dict_file} -c -p -I${ROOT_INCLUDE_DIR} ${MY_INCLUDE_DIRECTORIES} ${headers_input} ${LINKDEF_FILE} 
@@ -346,11 +347,11 @@ source_group(dictionary FILES  ${dict_file} )
 
 if (CMAKE_SYSTEM_NAME MATCHES Linux)
 	add_custom_command(TARGET ${TargetName} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/lib/"
+    COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/lib/${dict_file_pcm_short}" 
 	)
 else (CMAKE_SYSTEM_NAME MATCHES Linux) #windows
 	add_custom_command(TARGET ${TargetName} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/bin/"
+		COMMAND ${CMAKE_COMMAND} -E copy "${dict_file_pcm}" "${PROJECT_SOURCE_DIR}/bin/${dict_file_pcm_short}"
 	)
 endif (CMAKE_SYSTEM_NAME MATCHES Linux)
 endfunction()
