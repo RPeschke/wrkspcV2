@@ -84,7 +84,7 @@ class UDP:
             ##    Input: s = string of HEX
             ##           d = description
             ##    Output: Device, register No., 16-bit binary word
-        if (self.DEBUG): Print( d.center(42, "-"), SOFT) # packet heading, user specified
+        Print( d.center(42, "-"), SOFT) # packet heading, user specified
         if (s[0:26] == self.syncwd): #remove syncword if present
             s = s[26:]
         # convert packet into 8-char-word list
@@ -93,13 +93,13 @@ class UDP:
         bits = [bin(int(entry[4], 16))[2:].zfill(4)+" "+bin(int(entry[5], 16))[2:].zfill(4)+" "+bin(int(entry[6], 16))[2:].zfill(4)+" "+bin(int(entry[7], 16))[2:].zfill(4)+" " for entry in wlst]
         for i in range(len(wlst)):
             if   (wlst[i][0:2] == "AE" or wlst[i][0:2] == "ae"):
-                Print("Wait %d" % int(wlst[i][4:8], 16), SOFT)
+                Print("%s:\tWait %d" % (str(wlst[i]),int(wlst[i][4:8], 16)), SOFT)
             elif (wlst[i][0:2] == "AF" or wlst[i][0:2] == "af"):
-                Print("SCROD  Register: %-4d  %s  (%d)" % (int(wlst[i][2:4], 16), bits[i], int(wlst[i][4:8], 16)), SOFT)
+                Print("%s:\tSCROD  Register: %-4d  %s  (%d)" % (str(wlst[i]),int(wlst[i][2:4], 16), bits[i], int(wlst[i][4:8], 16)), SOFT)
             elif (wlst[i][0:2] == "C0" or wlst[i][0:2] == "c0"):
-                Print("HV, ASIC: %d, Ch: %-2d trimDAC: %d" % (int(wlst[i][2], 16), int(wlst[i][3], 16), int(wlst[i][6:8], 16)), SOFT)
+                Print("%s:\tHV, ASIC: %d, Ch: %-2d trimDAC: %d" % (str(wlst[i]),int(wlst[i][2], 16), int(wlst[i][3], 16), int(wlst[i][6:8], 16)), SOFT)
             elif (wlst[i][0]   == "B"  or wlst[i][0]   == "b"):
-                Print("ASIC_%s Register: %-4d  %s  (%d)" % (wlst[i][1], int(wlst[i][2:4], 16), bits[i], int(wlst[i][4:8], 16)), SOFT)
+                Print("%s:\tASIC_%s Register: %-4d  %s  (%d)" % (str(wlst[i]),wlst[i][1], int(wlst[i][2:4], 16), bits[i], int(wlst[i][4:8], 16)), SOFT)
             else:
                 Print("(other) HEX word: %s" % wlst[i], SOFT)
         print
