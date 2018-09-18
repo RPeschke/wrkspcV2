@@ -33,8 +33,10 @@ def CheckCmdLineArgs(sys):
 class ImportRunControlFunctions:
     def __init__(self, sys, DEBUG=0):
         CheckCmdLineArgs(sys)
-        self.DEBUG = DEBUG
-        if (self.DEBUG): ETH.DEBUG = 1
+        if (DEBUG==1): self.DEBUG = True
+        if (DEBUG==2): 
+            self.DEBUG = True
+            ETH.DEBUG = True
 
         ### ----initialize RUN parameters---- ###
         self.t0                = time.time()
@@ -46,9 +48,12 @@ class ImportRunControlFunctions:
         self.date              = strftime("%Y%m%d", time.localtime())
         self.datetime          = strftime("%Y%m%d_%H%M%S%Z", time.localtime())
         self.binDatafile       = "temp/data.dat"
-        self.root_file             = "data/%s/%s_%s.root" % (self.SN,self.SN,self.date)
-        self.pedfile           = "data/%s/pedestals.root" % (self.SN)
+        self.root_file         = "data/%s/%s_%s.root" % (self.SN,self.SN,self.date)
         #self.root_file             = "data/%s/%s_%s.root" % (self.SN,self.SN,self.datetime)
+        self.pedfile           = "data/%s/pedestals.root" % (self.SN)
+        self.PlotsDir = "data/%s/plots" % self.SN
+        if not (os.path.isdir(self.PlotsDir)):
+            os.system("mkdir -p %s" % self.PlotsDir)
 
         ### ----initialize CONTROL PARAMETERS to defaults---- ###
         self.NumEvts           = 0
@@ -71,8 +76,6 @@ class ImportRunControlFunctions:
         self.FWoutMode         = 0 # 0 for waveforms, 1 for feat. ext. data only
         self.ParserPedSubType  = "-SWpeds"
         self.RunConfig = ""
-        if not (os.path.isdir("data/"+self.SN)):
-            os.system("mkdir -p data/" + self.SN + "/plots")
 
     def Get_ASIC_Th_from_file(self, ASIC, opt=""):
         calib_file = "data/%s/calib/HVandTH/%s_HV%s_ASIC%d.txt" % (self.SN, self.SN, self.strHV, ASIC)
@@ -140,6 +143,7 @@ class ImportRunControlFunctions:
         if (self.DEBUG): Print("Sending run configuration to FPGA", SOFT)
         self.RunConfig = cmd.Generate_ASIC_triggered_run_config_cmd()
         ETH.send(self.RunConfig)
+        if (self.DEBUG): ETH.KLMprint(self.RunConfig, "Self-triggered Run Configuration")
         tExtra = 0
         evtNum = 0
         tProg = t0 = time.time()
@@ -174,14 +178,17 @@ class ImportRunControlFunctions:
 
     def RandomWindowDataCollectionLoop(self,cmd,f):
         ETH.send(cmd.THoff())
+        if (self.DEBUG): ETH.KLMprint(cmd.THoff(), "THoff")
         time.sleep(0.01)
         for ASIC in range(10):
             if ((2**ASIC & int(self.ASICmask,2)) > 0):
                 if (self.DEBUG): Print("Sending run configuration to FPGA", SOFT)
                 ETH.send(cmd.ASIC_HV_DAC_w_offset())
+                if (self.DEBUG): ETH.KLMprint(cmd.ASIC_HV_DAC_w_offset, "ASIC_HV_DAC_w_offset")
                 time.sleep(0.01)
                 self.RunConfig = cmd.Generate_Software_triggered_run_config_cmd(ASIC)
                 ETH.send(self.RunConfig)
+                if (self.DEBUG): ETH.KLMprint(self.RunConfig, "Software-triggered Run configuration")
                 time.sleep(0.01)
                 t0 = time.time()
                 Print("Taking %s events for ASIC %d . . ." % (self.NumEvts, ASIC), SOFT)
@@ -199,20 +206,24 @@ class ImportRunControlFunctions:
 
     def SoftwareTriggeredDataCollectionLoop(self,cmd,f):
         ETH.send(cmd.HVoff())
+        if (self.DEBUG): ETH.KLMprint(cmd.HVoff(), "HVoff")
         time.sleep(0.01)
         ETH.send(cmd.THoff())
+        if (self.DEBUG): ETH.KLMprint(cmd.THoff(), "THoff")
         time.sleep(0.01)
         for ASIC in range(10):
             if ((2**ASIC & int(self.ASICmask,2)) > 0):
                 if (self.DEBUG): Print("Sending run configuration to FPGA", SOFT)
                 self.RunConfig = cmd.Generate_Software_triggered_run_config_cmd(ASIC)
                 ETH.send(self.RunConfig)
+                if (self.DEBUG): ETH.KLMprint(self.RunConfig, "RunConfig")
                 time.sleep(0.01)
                 t0 = time.time()
                 self.NumEvts = 128*self.NumSoftwareEvtsPerWin
                 Print("Taking %s events for ASIC %d . . ." % (self.NumEvts, ASIC), SOFT)
                 for evtNum in range(1,self.NumEvts+1):
                     ETH.send(cmd.Set_Readout_Window(((evtNum-1)*4)%512))
+                    if (self.DEBUG): ETH.KLMprint(cmd.Set_Readout_Window(((evtNum-1)*4)%512),"Set Readout Window")
                     time.sleep(0.005)
                     ETH.send(cmd.forceTrig)
                     rcv = ETH.receive(20000)# rcv is string of Hex
@@ -275,12 +286,13 @@ class ImportRunControlFunctions:
         Print("Parsing data . . .", SOFT)
         os.system("./bin/tx_ethparse1_ck temp/data.dat %s temp/triggerBits.txt %d %s" % (root_file,self.NumEvts,self.ParserPedSubType))
         os.system("echo -n > temp/data.dat") #clean binary file again to save disk space!
+        os.system("chmod g+w %s" % root_file)
         Print("Data Parsed\nWaveform data saved in %s%s" % (OKBLUE,root_file), SOFT)
 
     def SaveDataCollectionParameters(self):
         Print(SOFT,"Saving data-collection parameters to %s%s\n\n" % (OKBLUE,self.root_file))
         for ASIC in range(10):
-            if ((2**ASIC & int(self.HVmask,2)) > 0):
+            if ((2**ASIC & int(self.ASICmask,2)) > 0):
                 ThDAC_Base    = np.asarray(self.Get_ASIC_Th_from_file(ASIC,'quiet'))
                 ThDAC_offset  = np.asarray(self.ThDAC_offset)
                 HVDAC         = np.asarray(self.Get_ASIC_HV_from_file(ASIC,'quiet')+self.HVDAC_offset)
@@ -360,6 +372,7 @@ class ImportRunControlFunctions:
         time.sleep(0.1)
         ETH.send(ETH.syncwd + 'AF2F0004'+'AE000100')
         time.sleep(0.1)
+        if (self.DEBUG): ETH.KLMprint( 'AF4A0136'+'AE000100'+ 'AF2F0004'+'AE000100', "Scaler Couning Configuration")
 
     def MeasureTrigDAC_and_HV_DAC_BaseValues(self):
         cmd = cmd_lib.CMD(self)
@@ -373,6 +386,7 @@ class ImportRunControlFunctions:
                 ETH.send(ETH.syncwd + 'AF4A0136'+'AE000100')
                 time.sleep(0.1)
                 ETH.send(cmd.Reg47_NumClkCyclesForTrigScalerCounter(self.ScalerCntNum16BitCycles))
+                if (self.DEBUG): ETH.KLMprint(cmd.Reg47_NumClkCyclesForTrigScalerCounter(self.ScalerCntNum16BitCycles) ,"Number of 16bit clock cycles for scaler counting")
                 time.sleep(0.1)
                 for ch in range(15):
                     if ((2**ch & int(self.HVmask,2)) > 0):
@@ -402,7 +416,7 @@ class ImportRunControlFunctions:
 
     def CreatePedestalMasterFile(self,opt=128):
         cmd = cmd_lib.CMD(self)
-        self.MeasurePedestalDistribution(cmd,opt)
-        ROOT.AveragePedestalTTree(self.pedfile,int(self.ASICmask,2),float(self.NumSoftwareEvtsPerWin))
+        self.MeasurePedestalDistribution(opt)
+        ROOT.AveragePedestalTTree(self.pedfile,int(self.ASICmask,2),float(opt))
         Print("Averaged pedestal data saved in %s%s" % (OKBLUE,self.pedfile), SOFT)
         os.system("chmod g+w %s" % self.pedfile)

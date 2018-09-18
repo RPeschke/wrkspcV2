@@ -17,10 +17,10 @@ sys.path.append('/home/testbench2/root_6_08/lib')
 ##      last modified: 23 July 2018
 ##
 ################################################################################
-run = run_lib.ImportRunControlFunctions(sys)
-
+DEBUG = 1 #2 for higher detial debug info
+run = run_lib.ImportRunControlFunctions(sys, DEBUG)
 ### ----CONTROL PARAMETERS---- ###
-run.NumEvts       = 100
+run.NumEvts       = 20
 run.ASICmask      = "0000000001"  # e.g. 0000000111 for enabling ASICs 0, 1, and 2
 run.HVmask        = "0100000000000001" #16-ch mask: 0= 255 trim DAC counts, 1= HV DAC from file
 run.TrigMask      = "0000000000000001" #16-ch mask: 0= 4095 trig DAC counts, 1= trig DAC from file
@@ -28,16 +28,17 @@ run.HVDAC_offset  = [ -25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -25]
 run.ThDAC_offset  = [-225, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0]
 
 
-#run.MeasureTrigDAC_and_HV_DAC_BaseValues()
+run.MeasureTrigDAC_and_HV_DAC_BaseValues()
 
-#run.CreatePedestalMasterFile() # opt: (# of averages)
+#run.CreatePedestalMasterFile(4) # opt: (# of averages)
 
-#run.MeasurePedestalDistribution() # opt: (# of evts. per win.)
-#run.Plot_Peds_OneASIC()
+run.MeasurePedestalDistribution() # opt: (# of evts. per win.)
+run.Plot_Peds_OneASIC()
 
 #run.CollectRandomWindowData()
 
-#run.CollectASICtriggeredData()
+run.CollectASICtriggeredData()
 
 root = anal_lib.NewAnalysis(run)
 root.ProcessWaveforms() # opt: (infile, outfile)
+root.StreamWaveformsToTerminal()
